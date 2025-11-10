@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Posts - Square Publisher</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+    }
+    .navbar {
+      background: white;
+      padding: 1rem 2rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .navbar h1 { font-size: 1.5rem; color: #333; }
+    .navbar .user {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-primary { background: #667eea; color: white; }
+    .btn-secondary { background: #ddd; color: #333; }
+    .container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+    }
+    .filters {
+      background: white;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+      display: flex;
+      gap: 1rem;
+    }
+    .filters select {
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .posts-table {
+      background: white;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th {
+      background: #f8f8f8;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: #555;
+    }
+    td {
+      padding: 1rem;
+      border-top: 1px solid #eee;
+    }
+    .status {
+      padding: 0.25rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .status-draft { background: #ffeaa7; color: #d63031; }
+    .status-published { background: #00b894; color: white; }
+    .status-archived { background: #ddd; color: #666; }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .pagination a {
+      padding: 0.5rem 0.75rem;
+      background: white;
+      border-radius: 4px;
+      text-decoration: none;
+      color: #333;
+    }
+    .pagination a.active { background: #667eea; color: white; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <h1>Square Publisher</h1>
+    <div class="user">
+      <span><%= user.email %></span>
+      <form action="/admin/logout" method="POST" style="margin: 0;">
+        <button type="submit" class="btn btn-secondary">Logout</button>
+      </form>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="filters">
+      <select onchange="window.location.href='/admin/posts?status=' + this.value">
+        <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>All</option>
+        <option value="draft" <%= filters.status === 'draft' ? 'selected' : '' %>>Drafts</option>
+        <option value="published" <%= filters.status === 'published' ? 'selected' : '' %>>Published</option>
+        <option value="archived" <%= filters.status === 'archived' ? 'selected' : '' %>>Archived</option>
+      </select>
+    </div>
+
+    <div class="posts-table">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Title / Summary</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (posts.length === 0) { %>
+            <tr>
+              <td colspan="5" style="text-align: center; color: #999;">No posts found</td>
+            </tr>
+          <% } else { %>
+            <% posts.forEach(post => { %>
+              <tr>
+                <td>#<%= post.id %></td>
+                <td>
+                  <% if (post.title) { %>
+                    <strong><%= post.title %></strong><br>
+                  <% } %>
+                  <small style="color: #666;"><%= post.summary || 'No summary' %></small>
+                </td>
+                <td>
+                  <span class="status status-<%= post.status %>"><%= post.status %></span>
+                </td>
+                <td><%= new Date(post.created_at).toLocaleDateString() %></td>
+                <td>
+                  <a href="/admin/posts/<%= post.id %>" class="btn btn-primary">Edit</a>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if (pagination.totalPages > 1) { %>
+      <div class="pagination">
+        <% for (let i = 1; i <= pagination.totalPages; i++) { %>
+          <a href="/admin/posts?page=<%= i %>&status=<%= filters.status %>" 
+             class="<%= i === pagination.page ? 'active' : '' %>"><%= i %></a>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</body>
+</html>

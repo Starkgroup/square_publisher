@@ -5,16 +5,33 @@ import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
 import staticPlugin from '@fastify/static';
 import cors from '@fastify/cors';
+import cookie from '@fastify/cookie';
+import session from '@fastify/session';
+import formbody from '@fastify/formbody';
+import view from '@fastify/view';
+import ejs from 'ejs';
 import { mkdirSync, existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import config from './config/index.js';
 import { initDb } from './db/index.js';
+import { initDefaultAdmin } from './lib/users.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Plugins
 import authPlugin from './plugins/auth.js';
+import requireAuthPlugin from './plugins/require-auth.js';
 
 // Routes
 import healthzRoutes from './routes/healthz.js';
 import ingestRoutes from './routes/ingest.js';
+import adminAuthRoutes from './routes/admin/auth.js';
+import adminPostsRoutes from './routes/admin/posts.js';
+import adminMediaRoutes from './routes/admin/media.js';
+import adminPublishRoutes from './routes/admin/publish.js';
+import rssRoutes from './routes/rss.js';
 
 // Ensure uploads directory exists
 if (!existsSync(config.uploads.dir)) {
@@ -42,11 +59,37 @@ const fastify = Fastify({
 // Initialize database
 initDb(config.db.path);
 
+// Initialize default admin user
+await initDefaultAdmin(config.auth.adminUser, config.auth.adminPass);
+
 // Make config available to routes
 fastify.decorate('config', config);
 
-// Register auth plugin
+// Register auth plugins
 await fastify.register(authPlugin);
+await fastify.register(requireAuthPlugin);
+
+// Cookie and session support
+await fastify.register(cookie);
+await fastify.register(session, {
+  secret: config.auth.sessionSecret,
+  cookie: {
+    secure: !config.isDev,
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+  },
+});
+
+// Form body parser
+await fastify.register(formbody);
+
+// Template engine
+await fastify.register(view, {
+  engine: {
+    ejs,
+  },
+  root: join(__dirname, 'views'),
+});
 
 // Security plugins
 await fastify.register(helmet, {
@@ -82,6 +125,12 @@ await fastify.register(staticPlugin, {
 // Routes
 await fastify.register(healthzRoutes);
 await fastify.register(ingestRoutes);
+// Register RSS before admin routes so decorators are available
+await fastify.register(rssRoutes);
+await fastify.register(adminAuthRoutes);
+await fastify.register(adminPostsRoutes);
+await fastify.register(adminMediaRoutes);
+await fastify.register(adminPublishRoutes);
 
 // Error handler
 fastify.setErrorHandler((error, request, reply) => {

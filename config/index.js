@@ -12,7 +12,7 @@ dotenvConfig();
 const env = process.env;
 
 // Validate required env vars
-const required = ['ADMIN_USER', 'ADMIN_PASS', 'INGEST_TOKEN'];
+const required = ['ADMIN_USER', 'ADMIN_PASS', 'INGEST_TOKEN', 'SESSION_SECRET'];
 for (const key of required) {
   if (!env[key]) {
     throw new Error(`Missing required environment variable: ${key}`);
@@ -37,6 +37,7 @@ export default {
     adminUser: env.ADMIN_USER,
     adminPass: env.ADMIN_PASS,
     ingestToken: env.INGEST_TOKEN,
+    sessionSecret: env.SESSION_SECRET,
   },
   
   uploads: {
