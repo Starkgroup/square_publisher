@@ -1,6 +1,7 @@
+import fp from 'fastify-plugin';
 import { createRssBuilder } from '../lib/rssBuilder.js';
 
-export default async function rssRoutes(fastify) {
+async function rssRoutes(fastify) {
   const builder = createRssBuilder({
     baseUrl: fastify.config.server.baseUrl,
     feedSize: fastify.config.rss.feedSize,
@@ -29,3 +30,5 @@ export default async function rssRoutes(fastify) {
     return reply.send(cache.xml);
   });
 }
+
+export default fp(rssRoutes);

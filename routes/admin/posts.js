@@ -146,11 +146,6 @@ export default async function adminPostsRoutes(fastify) {
 
       db.prepare(`UPDATE posts SET ${setClauses} WHERE id = ?`).run(...params);
 
-      // Invalidate RSS if a published post was updated
-      if (post.status === 'published' && typeof fastify.rssInvalidate === 'function') {
-        fastify.rssInvalidate();
-      }
-
       // Log audit
       logAudit(id, request.session.email, 'post_updated', {
         fields: Object.keys(updates).filter(k => k !== 'version' && k !== 'updated_at'),
