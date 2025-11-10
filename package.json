@@ -1,0 +1,41 @@
+{
+  "name": "square-publisher",
+  "version": "1.0.0",
+  "description": "Content receiver with admin editor and RSS publisher",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "migrate": "node scripts/migrate.js",
+    "test": "node --test tests/*.spec.js"
+  },
+  "keywords": [
+    "fastify",
+    "rss",
+    "cms"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@fastify/compress": "^7.0.0",
+    "@fastify/cors": "^9.0.0",
+    "@fastify/formbody": "^7.4.0",
+    "@fastify/helmet": "^11.1.1",
+    "@fastify/multipart": "^8.1.0",
+    "@fastify/rate-limit": "^9.1.0",
+    "@fastify/static": "^7.0.0",
+    "@fastify/view": "^9.0.0",
+    "bcrypt": "^5.1.1",
+    "better-sqlite3": "^11.7.0",
+    "dotenv": "^17.2.3",
+    "ejs": "^3.1.9",
+    "fastify": "^4.26.0",
+    "nanoid": "^5.0.5",
+    "pino": "^8.19.0",
+    "pino-pretty": "^10.3.1"
+  },
+  "devDependencies": {
+    "light-my-request": "^5.11.0"
+  }
+}
