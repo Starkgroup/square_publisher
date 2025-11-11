@@ -95,7 +95,10 @@
 <body>
   <nav class="navbar">
     <h1><a href="/admin/posts" style="color: inherit; text-decoration: none;">← Back to Posts</a></h1>
-    <span><%= user.email %></span>
+    <div>
+      <a href="/admin/audit" style="color: #667eea; text-decoration: none; margin-right: 1rem;">Audit Log</a>
+      <span><%= user.email %></span>
+    </div>
   </nav>
 
   <div class="container" data-post-id="<%= post.id %>">

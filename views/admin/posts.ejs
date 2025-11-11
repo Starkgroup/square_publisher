@@ -101,7 +101,8 @@
 <body>
   <nav class="navbar">
     <h1>Square Publisher</h1>
-    <div class="user">
+    <div>
+      <a href="/admin/audit" style="color: #667eea; text-decoration: none; margin-right: 1rem;">Audit Log</a>
       <span><%= user.email %></span>
       <form action="/admin/logout" method="POST" style="margin: 0;">
         <button type="submit" class="btn btn-secondary">Logout</button>

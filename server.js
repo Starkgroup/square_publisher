@@ -31,6 +31,7 @@ import adminAuthRoutes from './routes/admin/auth.js';
 import adminPostsRoutes from './routes/admin/posts.js';
 import adminMediaRoutes from './routes/admin/media.js';
 import adminPublishRoutes from './routes/admin/publish.js';
+import adminAuditRoutes from './routes/admin/audit.js';
 import rssRoutes from './routes/rss.js';
 
 // Ensure uploads directory exists
@@ -131,6 +132,7 @@ await fastify.register(adminAuthRoutes);
 await fastify.register(adminPostsRoutes);
 await fastify.register(adminMediaRoutes);
 await fastify.register(adminPublishRoutes);
+await fastify.register(adminAuditRoutes);
 
 // Error handler
 fastify.setErrorHandler((error, request, reply) => {
