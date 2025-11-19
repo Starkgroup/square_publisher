@@ -1,4 +1,4 @@
-import { validateIngestRequest, generateSummary, ValidationError } from '../lib/validation.js';
+import { validateIngestRequest, generateSummary, ValidationError, validateRssToLinkedInRequest, buildLinkedInText } from '../lib/validation.js';
 import { generateUniqueSlug } from '../lib/slugify.js';
 import { getDb } from '../db/index.js';
 
@@ -57,6 +57,34 @@ export default async function ingestRoutes(fastify) {
         edit_url: `${fastify.config.server.baseUrl}/admin/posts/${postId}`,
       });
 
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        return reply.status(err.statusCode).send({
+          error: err.message,
+          code: err.code,
+          details: err.details,
+        });
+      }
+      throw err;
+    }
+  });
+
+  /**
+   * POST /ingest/rss-to-linkedin
+   * Accept RSS item fields and return LinkedIn-ready text and media hint
+   */
+  fastify.post('/ingest/rss-to-linkedin', {
+    onRequest: [fastify.verifyIngestToken],
+  }, async (request, reply) => {
+    try {
+      const data = validateRssToLinkedInRequest(request.body);
+      const text = buildLinkedInText({ title: data.title, link: data.link, summary: data.summary });
+
+      return reply.status(200).send({
+        text,
+        image_url: data.image_url || null,
+        guid: data.guid || null,
+      });
     } catch (err) {
       if (err instanceof ValidationError) {
         return reply.status(err.statusCode).send({
