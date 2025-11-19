@@ -123,6 +123,13 @@ await fastify.register(staticPlugin, {
   decorateReply: false,
 });
 
+// Static files (for public assets)
+await fastify.register(staticPlugin, {
+  root: join(__dirname, 'public'),
+  prefix: '/public/',
+  decorateReply: false,
+});
+
 // Routes
 await fastify.register(healthzRoutes);
 await fastify.register(ingestRoutes);
@@ -133,6 +140,23 @@ await fastify.register(adminPostsRoutes);
 await fastify.register(adminMediaRoutes);
 await fastify.register(adminPublishRoutes);
 await fastify.register(adminAuditRoutes);
+
+// Root redirects
+fastify.get('/', async (request, reply) => {
+  if (request.session && request.session.userId) {
+    return reply.redirect('/admin/posts');
+  }
+
+  return reply.redirect('/admin/login');
+});
+
+fastify.get('/admin', async (request, reply) => {
+  if (request.session && request.session.userId) {
+    return reply.redirect('/admin/posts');
+  }
+
+  return reply.redirect('/admin/login');
+});
 
 // Error handler
 fastify.setErrorHandler((error, request, reply) => {
