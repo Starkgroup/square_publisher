@@ -28,16 +28,17 @@ export default async function ingestRoutes(fastify) {
       const slug = await generateUniqueSlug(validatedData.text, checkSlugExists);
       const summary = generateSummary(validatedData.text);
 
-      // Insert post
       const result = db.prepare(`
-        INSERT INTO posts (slug, text, summary, status, source, ext_id)
-        VALUES (?, ?, ?, 'draft', ?, ?)
+        INSERT INTO posts (slug, text, summary, status, source, ext_id, tag, link)
+        VALUES (?, ?, ?, 'draft', ?, ?, ?, ?)
       `).run(
         slug,
         validatedData.text,
         summary,
         validatedData.source,
-        validatedData.ext_id
+        validatedData.ext_id,
+        validatedData.tag,
+        validatedData.link
       );
 
       const postId = result.lastInsertRowid;
