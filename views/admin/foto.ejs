@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Template Photos - Square Publisher</title>
+  <link rel="stylesheet" href="/public/css/admin.css">
+</head>
+<body class="admin-page">
+  <header class="admin-header">
+    <div class="admin-brand">
+      <div class="admin-brand-mark">
+        <img src="/public/img/logo.png" alt="Square Capital Consulting logo" class="admin-brand-logo">
+      </div>
+      <div class="admin-brand-text">Square Capital Consulting</div>
+    </div>
+    <div class="admin-nav">
+      <a href="/admin/posts" class="admin-nav-link">Posts</a>
+      <a href="/admin/foto" class="admin-nav-link admin-nav-link--active">Foto</a>
+      <a href="/admin/audit" class="admin-nav-link">Audit Log</a>
+      <div class="admin-user">
+        <span><%= user.email %></span>
+        <a href="/admin/logout" class="admin-nav-link">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <div class="container">
+      <% if (success) { %>
+        <div class="alert alert-success">Operation completed successfully!</div>
+      <% } %>
+      
+      <% if (error) { %>
+        <div class="alert alert-error">Error: <%= error %></div>
+      <% } %>
+
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap: 12px;">
+          <h2 style="margin: 0;">Template Photos</h2>
+          <button type="button" id="btnEditPrompt" class="btn btn-primary">Edit Prompt</button>
+        </div>
+        <p style="color: #666; margin-bottom: 1rem;">
+          Upload template photos that will be used as base images for AI-generated article covers.
+          These photos should have empty spaces where the article title and tag will be placed.
+        </p>
+
+        <form action="/admin/foto/upload" method="POST" enctype="multipart/form-data" style="margin-bottom: 2rem; padding: 1rem; background: #f9f9f9; border-radius: 8px;">
+          <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+              <label for="file" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Select Image</label>
+              <input type="file" id="file" name="file" accept="image/*" required style="width: 100%;">
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <label for="alt" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Description (optional)</label>
+              <input type="text" id="alt" name="alt" placeholder="e.g., Blue background with person" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <button type="submit" class="btn btn-primary">Upload Template</button>
+          </div>
+        </form>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem;">
+          <% if (templates.length === 0) { %>
+            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: #777;">
+              <p style="font-size: 1.1rem;">No template photos yet.</p>
+              <p>Upload your first template photo above to get started with AI image generation.</p>
+            </div>
+          <% } else { %>
+            <% templates.forEach(t => { %>
+              <div style="border: 1px solid #eee; border-radius: 8px; padding: 12px; background: #fafafa;">
+                <div class="template-card"
+                     data-url="<%= t.url %>"
+                     data-alt="<%= t.alt || 'Template' %>"
+                     style="height: 160px; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #eee; border-radius: 6px; overflow: hidden; cursor: pointer;">
+                  <img src="<%= t.url %>" alt="<%= t.alt || 'Template' %>" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; color: #555;">
+                  <div><strong>ID:</strong> #<%= t.id %></div>
+                  <div><strong>Size:</strong> <%= Math.round(t.size_bytes / 1024) %> KB</div>
+                  <div><strong>Added:</strong> <%= new Date(t.created_at).toLocaleDateString() %></div>
+                  <% if (t.alt) { %>
+                    <div style="margin-top: 4px; font-style: italic;"><%= t.alt %></div>
+                  <% } %>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                  <form action="/admin/foto/<%= t.id %>/delete" method="POST" style="margin: 0;" onsubmit="return confirm('Delete this template?');">
+                    <button type="submit" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">Delete</button>
+                  </form>
+                </div>
+              </div>
+            <% }) %>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Lightbox -->
+  <div id="lightbox" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; cursor: pointer;" onclick="closeLightbox()">
+    <span style="position: absolute; top: 20px; right: 30px; color: #fff; font-size: 40px; font-weight: bold; cursor: pointer;">&times;</span>
+    <img id="lightbox-img" src="" alt="" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 8px;">
+  </div>
+
+  <!-- Prompt Editor Modal -->
+  <div id="promptModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 12px; padding: 24px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0;">Edit Prompt</h3>
+        <button type="button" id="promptClose" style="background: none; border: none; font-size: 22px; cursor: pointer;">&times;</button>
+      </div>
+      <div style="margin-bottom: 8px; color: #555; font-size: 14px;">
+        You can use variables: <code>{{title}}</code>, <code>{{tag}}</code>
+      </div>
+      <textarea id="promptContent" style="width: 100%; min-height: 240px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: monospace; font-size: 14px;"></textarea>
+      <div id="promptStatus" style="display:none; margin-top: 10px; padding: 10px; border-radius: 6px; font-size: 14px;"></div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+        <button type="button" id="promptCancel" class="btn btn-secondary">Cancel</button>
+        <button type="button" id="promptSave" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openLightbox(url, alt) {
+      const lightbox = document.getElementById('lightbox');
+      const img = document.getElementById('lightbox-img');
+      img.src = url;
+      img.alt = alt;
+      lightbox.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox();
+    });
+
+    // Prompt editor
+    const promptModal = document.getElementById('promptModal');
+    const btnEditPrompt = document.getElementById('btnEditPrompt');
+    const promptClose = document.getElementById('promptClose');
+    const promptCancel = document.getElementById('promptCancel');
+    const promptSave = document.getElementById('promptSave');
+    const promptContent = document.getElementById('promptContent');
+    const promptStatus = document.getElementById('promptStatus');
+
+    function showPromptModal() {
+      promptModal.style.display = 'flex';
+      promptStatus.style.display = 'none';
+    }
+
+    function hidePromptModal() {
+      promptModal.style.display = 'none';
+    }
+
+    function setPromptStatus(msg, isError = false) {
+      promptStatus.style.display = 'block';
+      promptStatus.style.background = isError ? '#fee2e2' : '#e0f2fe';
+      promptStatus.style.color = isError ? '#991b1b' : '#075985';
+      promptStatus.textContent = msg;
+    }
+
+    async function loadPrompt() {
+      try {
+        const res = await fetch('/admin/foto/prompt');
+        const data = await res.json();
+        if (!res.ok) {
+          setPromptStatus('Failed to load prompt', true);
+          return;
+        }
+        promptContent.value = data.content || '';
+      } catch (err) {
+        setPromptStatus('Network error: ' + err.message, true);
+      }
+    }
+
+    async function savePrompt() {
+      const content = promptContent.value;
+      try {
+        const res = await fetch('/admin/foto/prompt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setPromptStatus(data.error || 'Failed to save prompt', true);
+          return;
+        }
+        setPromptStatus('Saved successfully.');
+        setTimeout(() => hidePromptModal(), 800);
+      } catch (err) {
+        setPromptStatus('Network error: ' + err.message, true);
+      }
+    }
+
+    btnEditPrompt.addEventListener('click', () => {
+      showPromptModal();
+      loadPrompt();
+    });
+    promptClose.addEventListener('click', hidePromptModal);
+    promptCancel.addEventListener('click', hidePromptModal);
+    promptSave.addEventListener('click', savePrompt);
+
+    // Close modal on backdrop click
+    promptModal.addEventListener('click', (e) => {
+      if (e.target === promptModal) hidePromptModal();
+    });
+  </script>
+</body>
+</html>

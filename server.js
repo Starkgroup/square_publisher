@@ -32,6 +32,8 @@ import adminPostsRoutes from './routes/admin/posts.js';
 import adminMediaRoutes from './routes/admin/media.js';
 import adminPublishRoutes from './routes/admin/publish.js';
 import adminAuditRoutes from './routes/admin/audit.js';
+import adminAiGenerateRoutes from './routes/admin/ai-generate.js';
+import adminFotoRoutes from './routes/admin/foto.js';
 import rssRoutes from './routes/rss.js';
 
 // Ensure uploads directory exists
@@ -140,6 +142,8 @@ await fastify.register(adminPostsRoutes);
 await fastify.register(adminMediaRoutes);
 await fastify.register(adminPublishRoutes);
 await fastify.register(adminAuditRoutes);
+await fastify.register(adminAiGenerateRoutes);
+await fastify.register(adminFotoRoutes);
 
 // Root redirects
 fastify.get('/', async (request, reply) => {
