@@ -58,7 +58,8 @@ export default {
 
   openai: {
     apiKey: env.OPENAI_API_KEY || '',
-    model: env.OPENAI_IMAGE_MODEL || 'gpt-image-1',
+    imageModel: env.OPENAI_IMAGE_MODEL || 'gpt-image-1',
+    textModel: env.OPENAI_TEXT_MODEL || 'gpt-4o-mini',
     size: env.OPENAI_IMAGE_SIZE || '1024x1024',
     quality: env.OPENAI_IMAGE_QUALITY || 'high',
     outputFormat: env.OPENAI_IMAGE_FORMAT || 'png',

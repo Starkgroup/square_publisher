@@ -89,6 +89,17 @@
             Choose template
           </label>
         </div>
+        
+        <!-- Cover Generation Section -->
+        <div style="display: flex; align-items: center; gap: 0.5rem; border-left: 1px solid #ddd; padding-left: 1rem;">
+          <button type="button" id="btnGenerateCover" class="btn btn-success" style="background: #10b981;">
+            📷 Generate Cover
+          </button>
+          <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer; font-size: 13px;">
+            <input type="checkbox" id="chkChooseTemplateCover">
+            Choose template
+          </label>
+        </div>
       </div>
 
       <div id="mediaList" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem;">
@@ -182,6 +193,62 @@
         <button type="button" id="btnCancelAI" class="btn btn-secondary">Cancel</button>
         <button type="button" id="btnDoGenerate" class="btn btn-primary" style="background: #6366f1;">
           Generate Image
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cover Generation Modal -->
+  <div id="coverModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 12px; padding: 24px; max-width: 700px; width: 90%; max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin: 0;">📷 Generate Cover</h3>
+        <button type="button" id="btnCloseCoverModal" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+      </div>
+      
+      <p style="color: #666; margin-bottom: 20px;">
+        AI will generate a catchy German title from your article text and overlay it on a template photo.
+      </p>
+      
+      <!-- Template Selection for Cover -->
+      <div id="coverTemplateSelection" style="display: none; margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Select Template Photo:</label>
+        <div id="coverTemplateGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; max-height: 200px; overflow-y: auto; padding: 10px; background: #f5f5f5; border-radius: 8px;">
+          <div style="color: #777; text-align: center; padding: 20px;">Loading templates...</div>
+        </div>
+      </div>
+      
+      <!-- Tag Selection -->
+      <div style="margin-bottom: 20px;">
+        <label for="coverTag" style="display: block; margin-bottom: 6px; font-weight: 500;">Tag / Category:</label>
+        <select id="coverTag" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+          <option value="Finance">Finance</option>
+          <option value="Technology">Technology</option>
+          <option value="Marketing">Marketing</option>
+          <option value="Business">Business</option>
+          <option value="Investment">Investment</option>
+          <option value="Economy">Economy</option>
+          <option value="Leadership">Leadership</option>
+          <option value="Innovation">Innovation</option>
+          <option value="Strategy">Strategy</option>
+          <option value="General" selected>General</option>
+        </select>
+      </div>
+      
+      <!-- Status/Result Area -->
+      <div id="coverStatus" style="display: none; padding: 12px; border-radius: 6px; margin-bottom: 16px;"></div>
+      
+      <!-- Preview Area -->
+      <div id="coverPreview" style="display: none; margin-bottom: 16px; text-align: center;">
+        <div id="coverGeneratedTitle" style="margin-bottom: 8px; font-weight: 500; color: #333;"></div>
+        <img id="coverPreviewImg" src="" alt="Generated cover" style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid #ddd;">
+      </div>
+      
+      <!-- Actions -->
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button type="button" id="btnCancelCover" class="btn btn-secondary">Cancel</button>
+        <button type="button" id="btnDoGenerateCover" class="btn btn-primary" style="background: #10b981;">
+          Generate Cover
         </button>
       </div>
     </div>
@@ -518,6 +585,155 @@
     });
     document.querySelectorAll('.btn-delete-media').forEach(btn => {
       btn.addEventListener('click', () => deleteMedia(btn.dataset.mid));
+    });
+
+    // Cover Generation
+    const coverModal = document.getElementById('coverModal');
+    const btnGenerateCover = document.getElementById('btnGenerateCover');
+    const btnCloseCoverModal = document.getElementById('btnCloseCoverModal');
+    const btnCancelCover = document.getElementById('btnCancelCover');
+    const btnDoGenerateCover = document.getElementById('btnDoGenerateCover');
+    const chkChooseTemplateCover = document.getElementById('chkChooseTemplateCover');
+    const coverTemplateSelection = document.getElementById('coverTemplateSelection');
+    const coverTemplateGrid = document.getElementById('coverTemplateGrid');
+    const coverStatus = document.getElementById('coverStatus');
+    const coverPreview = document.getElementById('coverPreview');
+    const coverPreviewImg = document.getElementById('coverPreviewImg');
+    const coverGeneratedTitle = document.getElementById('coverGeneratedTitle');
+    const coverTag = document.getElementById('coverTag');
+
+    let selectedCoverTemplateId = null;
+    let coverTemplatesLoaded = false;
+
+    function showCoverModal() {
+      coverModal.style.display = 'flex';
+      coverStatus.style.display = 'none';
+      coverPreview.style.display = 'none';
+      btnDoGenerateCover.disabled = false;
+      btnDoGenerateCover.textContent = 'Generate Cover';
+      
+      if (chkChooseTemplateCover.checked) {
+        coverTemplateSelection.style.display = 'block';
+        loadCoverTemplates();
+      } else {
+        coverTemplateSelection.style.display = 'none';
+      }
+    }
+
+    function hideCoverModal() {
+      coverModal.style.display = 'none';
+      selectedCoverTemplateId = null;
+    }
+
+    async function loadCoverTemplates() {
+      if (coverTemplatesLoaded) return;
+      
+      try {
+        const res = await fetch('/admin/ai/templates');
+        const data = await res.json();
+        
+        if (data.templates.length === 0) {
+          coverTemplateGrid.innerHTML = '<div style="color: #777; text-align: center; padding: 20px; grid-column: 1/-1;">No templates available. <a href="/admin/foto">Upload templates first</a>.</div>';
+          return;
+        }
+        
+        coverTemplateGrid.innerHTML = data.templates.map(t => `
+          <div class="cover-template-item" data-id="${t.id}" style="cursor: pointer; border: 2px solid transparent; border-radius: 8px; padding: 4px; transition: border-color 0.2s;">
+            <img src="${t.url}" alt="${t.alt || 'Template'}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 6px;">
+          </div>
+        `).join('');
+        
+        coverTemplateGrid.querySelectorAll('.cover-template-item').forEach(item => {
+          item.addEventListener('click', () => {
+            coverTemplateGrid.querySelectorAll('.cover-template-item').forEach(i => i.style.borderColor = 'transparent');
+            item.style.borderColor = '#10b981';
+            selectedCoverTemplateId = parseInt(item.dataset.id);
+          });
+        });
+        
+        coverTemplatesLoaded = true;
+      } catch (err) {
+        coverTemplateGrid.innerHTML = '<div style="color: #c00; text-align: center; padding: 20px;">Error loading templates</div>';
+      }
+    }
+
+    function showCoverStatus(message, isError = false) {
+      coverStatus.style.display = 'block';
+      coverStatus.style.background = isError ? '#fee2e2' : '#d1fae5';
+      coverStatus.style.color = isError ? '#991b1b' : '#065f46';
+      coverStatus.textContent = message;
+    }
+
+    async function generateCover() {
+      const tag = coverTag.value;
+      const useRandomTemplate = !chkChooseTemplateCover.checked;
+      
+      if (chkChooseTemplateCover.checked && !selectedCoverTemplateId) {
+        showCoverStatus('Please select a template photo', true);
+        return;
+      }
+      
+      btnDoGenerateCover.disabled = true;
+      btnDoGenerateCover.textContent = 'Generating...';
+      showCoverStatus('🔄 Generating title and creating cover. Please wait...');
+      coverPreview.style.display = 'none';
+      
+      try {
+        const res = await fetch(`/admin/posts/${postId}/media/generate-cover`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            templateId: selectedCoverTemplateId,
+            tag,
+            useRandomTemplate
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          showCoverStatus('Error: ' + (data.error || 'Generation failed'), true);
+          btnDoGenerateCover.disabled = false;
+          btnDoGenerateCover.textContent = 'Retry';
+          return;
+        }
+        
+        // Show preview with generated title
+        showCoverStatus('✅ Cover generated successfully!');
+        coverGeneratedTitle.textContent = `Generated title: "${data.generated_title}"`;
+        coverPreviewImg.src = data.url;
+        coverPreview.style.display = 'block';
+        btnDoGenerateCover.textContent = 'Done!';
+        
+        // Reload page after 2 seconds to show new media
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+        
+      } catch (err) {
+        showCoverStatus('Network error: ' + err.message, true);
+        btnDoGenerateCover.disabled = false;
+        btnDoGenerateCover.textContent = 'Retry';
+      }
+    }
+
+    btnGenerateCover.addEventListener('click', showCoverModal);
+    btnCloseCoverModal.addEventListener('click', hideCoverModal);
+    btnCancelCover.addEventListener('click', hideCoverModal);
+    btnDoGenerateCover.addEventListener('click', generateCover);
+    
+    coverModal.addEventListener('click', (e) => {
+      if (e.target === coverModal) hideCoverModal();
+    });
+    
+    chkChooseTemplateCover.addEventListener('change', () => {
+      if (chkChooseTemplateCover.checked) {
+        coverTemplateSelection.style.display = 'block';
+        loadCoverTemplates();
+      } else {
+        coverTemplateSelection.style.display = 'none';
+        selectedCoverTemplateId = null;
+      }
     });
   </script>
 </body>
