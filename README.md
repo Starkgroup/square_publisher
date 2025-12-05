@@ -58,6 +58,23 @@ npm start
 
 - `POST /ingest/text` - Ingest text content (requires Bearer token)
 
+#### Example: Add a post via curl
+
+```bash
+INGEST_TOKEN=your_secret_token_here
+
+curl -X POST http://localhost:3025/ingest/text \
+  -H "Authorization: Bearer $INGEST_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "📊 Deutsche Anleger setzen auf Sachwerte: Ein Blick auf die aktuelle Entwicklung. In einer Zeit, in der finanzielle Sicherheit und Stabilität im Vordergrund stehen, zeigt eine aktuelle Umfrage im Auftrag von Pangaea Life, dass fast ein Drittel der Deutschen auf Sachwerte wie Immobilien, Infrastruktur und erneuerbare Energien setzt.",
+    "source": "rss",
+    "ext_id": "deutsche-anleger-setzen-auf-sachwerte-ein-blick-au",
+    "tag": "Finanzen",
+    "link": "https://square_publisher.stxk.de/admin/posts/2"
+  }'
+```
+
 ### Admin
 
 - `GET /admin/posts` - Posts list
