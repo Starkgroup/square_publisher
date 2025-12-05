@@ -16,6 +16,7 @@
     </div>
     <div class="admin-nav">
       <a href="/admin/posts" class="admin-nav-link admin-nav-link--active">Posts</a>
+      <a href="/admin/foto" class="admin-nav-link">Foto</a>
       <a href="/admin/audit" class="admin-nav-link">Audit Log</a>
       <div class="admin-user">
         <span><%= user.email %></span>
@@ -55,7 +56,7 @@
 
         <div class="form-group">
           <label for="text">Text *</label>
-          <textarea id="text" name="text" required><%= post.text %></textarea>
+          <textarea id="text" name="text" required style="overflow:hidden; min-height: 200px;"><%= post.text %></textarea>
         </div>
 
         <div class="actions">
@@ -70,10 +71,25 @@
 
     <div class="card">
       <h3>Media</h3>
-      <form id="uploadForm" enctype="multipart/form-data" style="margin-top: 1rem;">
-        <input type="file" name="file" accept="image/*" required>
-        <button type="submit" class="btn btn-primary" style="margin-left: 0.5rem;">Upload Image</button>
-      </form>
+      
+      <!-- Upload Section -->
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; padding: 1rem; background: #f9f9f9; border-radius: 8px;">
+        <form id="uploadForm" enctype="multipart/form-data" style="display: flex; align-items: center; gap: 0.5rem;">
+          <input type="file" name="file" accept="image/*" required>
+          <button type="submit" class="btn btn-primary">Upload Image</button>
+        </form>
+        
+        <!-- AI Generation Section -->
+        <div style="display: flex; align-items: center; gap: 0.5rem; border-left: 1px solid #ddd; padding-left: 1rem;">
+          <button type="button" id="btnGenerateAI" class="btn btn-success" style="background: #6366f1;">
+            🤖 Create with AI
+          </button>
+          <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer; font-size: 13px;">
+            <input type="checkbox" id="chkChooseTemplate">
+            Choose template
+          </label>
+        </div>
+      </div>
 
       <div id="mediaList" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem;">
         <% if (media.length === 0) { %>
@@ -81,7 +97,10 @@
         <% } else { %>
           <% media.forEach(m => { %>
             <div style="border:1px solid #eee; border-radius:6px; padding:10px; background:#fafafa;">
-              <div style="height:120px; display:flex; align-items:center; justify-content:center; background:#fff; border:1px solid #eee; border-radius:4px; overflow:hidden;">
+              <div class="media-thumb"
+                   data-url="<%= m.url %>"
+                   data-alt="<%= m.alt || '' %>"
+                   style="height:120px; display:flex; align-items:center; justify-content:center; background:#fff; border:1px solid #eee; border-radius:4px; overflow:hidden; cursor:pointer;">
                 <img src="<%= m.url %>" alt="<%= m.alt || '' %>" style="max-width:100%; max-height:100%; object-fit:contain;"/>
               </div>
               <div style="margin-top:8px; font-size:12px; color:#555; word-break: break-all;">
@@ -106,10 +125,133 @@
   </div>
   </main>
 
+  <!-- Lightbox for media preview -->
+  <div id="mediaLightbox" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; cursor: pointer;">
+    <span style="position: absolute; top: 20px; right: 30px; color: #fff; font-size: 40px; font-weight: bold; cursor: pointer;">&times;</span>
+    <img id="mediaLightboxImg" src="" alt="" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 8px;">
+  </div>
+
+  <!-- AI Generation Modal -->
+  <div id="aiModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 12px; padding: 24px; max-width: 700px; width: 90%; max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin: 0;">🤖 Generate Image with AI</h3>
+        <button type="button" id="btnCloseModal" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+      </div>
+      
+      <!-- Template Selection (shown only when choosing template) -->
+      <div id="templateSelection" style="display: none; margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Select Template Photo:</label>
+        <div id="templateGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; max-height: 200px; overflow-y: auto; padding: 10px; background: #f5f5f5; border-radius: 8px;">
+          <div style="color: #777; text-align: center; padding: 20px;">Loading templates...</div>
+        </div>
+      </div>
+      
+      <!-- Form Fields -->
+      <div style="margin-bottom: 16px;">
+        <label for="aiTitle" style="display: block; margin-bottom: 6px; font-weight: 500;">Article Title:</label>
+        <input type="text" id="aiTitle" value="<%= post.title || '' %>" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <label for="aiTag" style="display: block; margin-bottom: 6px; font-weight: 500;">Tag / Category:</label>
+        <select id="aiTag" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+          <option value="Finance">Finance</option>
+          <option value="Technology">Technology</option>
+          <option value="Marketing">Marketing</option>
+          <option value="Business">Business</option>
+          <option value="Investment">Investment</option>
+          <option value="Economy">Economy</option>
+          <option value="Leadership">Leadership</option>
+          <option value="Innovation">Innovation</option>
+          <option value="Strategy">Strategy</option>
+          <option value="General" selected>General</option>
+        </select>
+      </div>
+      
+      <!-- Status/Result Area -->
+      <div id="aiStatus" style="display: none; padding: 12px; border-radius: 6px; margin-bottom: 16px;"></div>
+      
+      <!-- Preview Area -->
+      <div id="aiPreview" style="display: none; margin-bottom: 16px; text-align: center;">
+        <img id="aiPreviewImg" src="" alt="Generated image" style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid #ddd;">
+      </div>
+      
+      <!-- Actions -->
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button type="button" id="btnCancelAI" class="btn btn-secondary">Cancel</button>
+        <button type="button" id="btnDoGenerate" class="btn btn-primary" style="background: #6366f1;">
+          Generate Image
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    // Lightbox functions
+    function openLightbox(url, alt) {
+      const lightbox = document.getElementById('lightbox');
+      const img = document.getElementById('lightbox-img');
+      img.src = url;
+      img.alt = alt;
+      lightbox.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox();
+    });
+
     const form = document.getElementById('editForm');
     const uploadForm = document.getElementById('uploadForm');
     const postId = document.querySelector('.container')?.dataset?.postId;
+    const textArea = document.getElementById('text');
+    const mediaLightbox = document.getElementById('mediaLightbox');
+    const mediaLightboxImg = document.getElementById('mediaLightboxImg');
+
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    }
+
+    if (textArea) {
+      autoResize(textArea);
+      textArea.addEventListener('input', () => autoResize(textArea));
+    }
+
+    // Media lightbox
+    function openLightbox(url, alt) {
+      if (!mediaLightbox || !mediaLightboxImg) return;
+      mediaLightboxImg.src = url;
+      mediaLightboxImg.alt = alt || '';
+      mediaLightbox.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      if (!mediaLightbox || !mediaLightboxImg) return;
+      mediaLightbox.style.display = 'none';
+      mediaLightboxImg.src = '';
+      document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('.media-thumb').forEach(el => {
+      el.addEventListener('click', () => {
+        const url = el.dataset.url;
+        const alt = el.dataset.alt || '';
+        openLightbox(url, alt);
+      });
+    });
+
+    mediaLightbox?.addEventListener('click', () => closeLightbox());
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox();
+    });
     
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -210,6 +352,173 @@
         alert('Network error: ' + err.message);
       }
     }
+
+    // AI Generation
+    const aiModal = document.getElementById('aiModal');
+    const btnGenerateAI = document.getElementById('btnGenerateAI');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    const btnCancelAI = document.getElementById('btnCancelAI');
+    const btnDoGenerate = document.getElementById('btnDoGenerate');
+    const chkChooseTemplate = document.getElementById('chkChooseTemplate');
+    const templateSelection = document.getElementById('templateSelection');
+    const templateGrid = document.getElementById('templateGrid');
+    const aiStatus = document.getElementById('aiStatus');
+    const aiPreview = document.getElementById('aiPreview');
+    const aiPreviewImg = document.getElementById('aiPreviewImg');
+    const aiTitle = document.getElementById('aiTitle');
+    const aiTag = document.getElementById('aiTag');
+
+    let selectedTemplateId = null;
+    let templatesLoaded = false;
+
+    function showModal() {
+      aiModal.style.display = 'flex';
+      aiStatus.style.display = 'none';
+      aiPreview.style.display = 'none';
+      btnDoGenerate.disabled = false;
+      btnDoGenerate.textContent = 'Generate Image';
+      
+      // Show template selection if checkbox is checked
+      if (chkChooseTemplate.checked) {
+        templateSelection.style.display = 'block';
+        loadTemplates();
+      } else {
+        templateSelection.style.display = 'none';
+      }
+    }
+
+    function hideModal() {
+      aiModal.style.display = 'none';
+      selectedTemplateId = null;
+    }
+
+    async function loadTemplates() {
+      if (templatesLoaded) return;
+      
+      try {
+        const res = await fetch('/admin/ai/templates');
+        const data = await res.json();
+        
+        if (data.templates.length === 0) {
+          templateGrid.innerHTML = '<div style="color: #777; text-align: center; padding: 20px; grid-column: 1/-1;">No templates available. <a href="/admin/foto">Upload templates first</a>.</div>';
+          return;
+        }
+        
+        templateGrid.innerHTML = data.templates.map(t => `
+          <div class="template-item" data-id="${t.id}" style="cursor: pointer; border: 2px solid transparent; border-radius: 8px; padding: 4px; transition: border-color 0.2s;">
+            <img src="${t.url}" alt="${t.alt || 'Template'}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 6px;">
+          </div>
+        `).join('');
+        
+        // Add click handlers
+        templateGrid.querySelectorAll('.template-item').forEach(item => {
+          item.addEventListener('click', () => {
+            templateGrid.querySelectorAll('.template-item').forEach(i => i.style.borderColor = 'transparent');
+            item.style.borderColor = '#6366f1';
+            selectedTemplateId = parseInt(item.dataset.id);
+          });
+        });
+        
+        templatesLoaded = true;
+      } catch (err) {
+        templateGrid.innerHTML = '<div style="color: #c00; text-align: center; padding: 20px;">Error loading templates</div>';
+      }
+    }
+
+    function showStatus(message, isError = false) {
+      aiStatus.style.display = 'block';
+      aiStatus.style.background = isError ? '#fee2e2' : '#dbeafe';
+      aiStatus.style.color = isError ? '#991b1b' : '#1e40af';
+      aiStatus.textContent = message;
+    }
+
+    async function generateImage() {
+      const title = aiTitle.value.trim();
+      const tag = aiTag.value;
+      const useRandomTemplate = !chkChooseTemplate.checked;
+      
+      if (!title) {
+        showStatus('Please enter an article title', true);
+        return;
+      }
+      
+      if (chkChooseTemplate.checked && !selectedTemplateId) {
+        showStatus('Please select a template photo', true);
+        return;
+      }
+      
+      btnDoGenerate.disabled = true;
+      btnDoGenerate.textContent = 'Generating...';
+      showStatus('🔄 Generating image with AI. This may take up to 2 minutes...');
+      aiPreview.style.display = 'none';
+      
+      try {
+        const res = await fetch(`/admin/posts/${postId}/media/generate-ai`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            templateId: selectedTemplateId,
+            title,
+            tag,
+            useRandomTemplate
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          showStatus('Error: ' + (data.error || 'Generation failed'), true);
+          btnDoGenerate.disabled = false;
+          btnDoGenerate.textContent = 'Retry';
+          return;
+        }
+        
+        // Show preview
+        showStatus('✅ Image generated successfully!');
+        aiPreviewImg.src = data.url;
+        aiPreview.style.display = 'block';
+        btnDoGenerate.textContent = 'Done!';
+        
+        // Reload page after 2 seconds to show new media
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+        
+      } catch (err) {
+        showStatus('Network error: ' + err.message, true);
+        btnDoGenerate.disabled = false;
+        btnDoGenerate.textContent = 'Retry';
+      }
+    }
+
+    btnGenerateAI.addEventListener('click', showModal);
+    btnCloseModal.addEventListener('click', hideModal);
+    btnCancelAI.addEventListener('click', hideModal);
+    btnDoGenerate.addEventListener('click', generateImage);
+    
+    // Close modal on backdrop click
+    aiModal.addEventListener('click', (e) => {
+      if (e.target === aiModal) hideModal();
+    });
+    
+    // Update template selection visibility when checkbox changes
+    chkChooseTemplate.addEventListener('change', () => {
+      if (chkChooseTemplate.checked) {
+        templateSelection.style.display = 'block';
+        loadTemplates();
+      } else {
+        templateSelection.style.display = 'none';
+        selectedTemplateId = null;
+      }
+    });
+
+    // Attach event listeners to cover and delete buttons
+    document.querySelectorAll('.btn-set-cover').forEach(btn => {
+      btn.addEventListener('click', () => setCover(btn.dataset.mid));
+    });
+    document.querySelectorAll('.btn-delete-media').forEach(btn => {
+      btn.addEventListener('click', () => deleteMedia(btn.dataset.mid));
+    });
   </script>
 </body>
 </html>

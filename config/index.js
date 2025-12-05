@@ -55,4 +55,12 @@ export default {
     feedSize: parseInt(env.RSS_FEED_SIZE, 10) || 50,
     cacheTtl: parseInt(env.RSS_CACHE_TTL, 10) || 300000, // 5 minutes
   },
+
+  openai: {
+    apiKey: env.OPENAI_API_KEY || '',
+    model: env.OPENAI_IMAGE_MODEL || 'gpt-image-1',
+    size: env.OPENAI_IMAGE_SIZE || '1024x1024',
+    quality: env.OPENAI_IMAGE_QUALITY || 'high',
+    outputFormat: env.OPENAI_IMAGE_FORMAT || 'png',
+  },
 };

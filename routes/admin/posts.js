@@ -99,7 +99,7 @@ export default async function adminPostsRoutes(fastify) {
   }, async (request, reply) => {
     const db = getDb();
     const { id } = request.params;
-    const { title, text, tags } = request.body;
+    const { title, text, tag, link } = request.body;
 
     try {
       const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(id);
@@ -130,6 +130,27 @@ export default async function adminPostsRoutes(fastify) {
         // Regenerate summary
         updates.summary = '?';
         params.push(generateSummary(normalizedText));
+      }
+
+      // Update tag (optional)
+      if (tag !== undefined) {
+        const trimmedTag = typeof tag === 'string' ? tag.trim() : '';
+        if (trimmedTag.length === 0) {
+          updates.tag = 'NULL';
+        } else {
+          updates.tag = '?';
+          params.push(trimmedTag);
+        }
+      }
+
+      if (link !== undefined) {
+        const trimmedLink = typeof link === 'string' ? link.trim() : '';
+        if (trimmedLink.length === 0) {
+          updates.link = 'NULL';
+        } else {
+          updates.link = '?';
+          params.push(trimmedLink);
+        }
       }
 
       // Increment version

@@ -1,0 +1,14 @@
+Use the provided photo exactly as-is for the person:
+- Do NOT change the face, skin, body, clothes, lighting, or the area with the person.
+- Keep all original details of the person intact and untouched.
+
+Only modify the empty/background area:
+- Add text only in the empty space of the background.
+- Add Article title: "{{title}}"
+- Add Hashtag/Tag: "#{{tag}}"
+- Do not add any other objects or effects.
+
+If compositing is needed, treat the photo as two layers:
+1) Foreground layer (person) — unchanged, preserved fully.
+2) Background layer — may be edited to place the text.
+Keep the image ratio 1:1 and ensure the text is clear, readable, and high-contrast without covering the person.
