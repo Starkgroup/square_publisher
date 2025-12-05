@@ -250,6 +250,7 @@ export default async function aiGenerateRoutes(fastify) {
       `).run(postId, relPath, url, coverBuffer.length, `Cover: ${generatedTitle}`);
 
       const mediaId = result.lastInsertRowid;
+      db.prepare('UPDATE posts SET cover_media_id = ? WHERE id = ?').run(mediaId, postId);
 
       return reply.status(201).send({
         media_id: mediaId,
