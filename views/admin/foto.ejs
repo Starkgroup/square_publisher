@@ -139,6 +139,15 @@
       if (e.key === 'Escape') closeLightbox();
     });
 
+    // Bind click to template cards for zoom
+    document.querySelectorAll('.template-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const url = card.dataset.url;
+        const alt = card.dataset.alt || 'Template';
+        openLightbox(url, alt);
+      });
+    });
+
     // Prompt editor
     const promptModal = document.getElementById('promptModal');
     const btnEditPrompt = document.getElementById('btnEditPrompt');
