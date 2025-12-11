@@ -44,12 +44,17 @@ export default async function adminFotoRoutes(fastify) {
       ORDER BY created_at DESC
     `).all(...params);
 
+    const users = isAdmin
+      ? db.prepare('SELECT id, email FROM users ORDER BY email ASC').all()
+      : [];
+
     return reply.view('admin/foto.ejs', {
       templates,
       user: {
         email: request.session.email,
         role: request.session.role,
       },
+      users,
       success: request.query.success === '1',
       error: request.query.error || null,
     });
@@ -125,7 +130,7 @@ export default async function adminFotoRoutes(fastify) {
   }, async (request, reply) => {
     const db = getDb();
     const { id } = request.params;
-    const { alt, tags: tagsRaw } = request.body || {};
+    const { alt, tags: tagsRaw, owner_user_id } = request.body || {};
 
     const template = db.prepare('SELECT id, owner_user_id FROM media WHERE id = ? AND is_template = 1').get(id);
     if (!template) {
@@ -138,8 +143,19 @@ export default async function adminFotoRoutes(fastify) {
     }
 
     const tags = normalizeTags(tagsRaw);
+    let newOwner = template.owner_user_id;
+    if (isAdmin) {
+      if (owner_user_id === '' || owner_user_id === undefined) {
+        newOwner = null;
+      } else {
+        const parsed = parseInt(owner_user_id, 10);
+        if (!Number.isNaN(parsed)) {
+          newOwner = parsed;
+        }
+      }
+    }
 
-    db.prepare('UPDATE media SET alt = ?, tags = ? WHERE id = ?').run(alt || '', tags, id);
+    db.prepare('UPDATE media SET alt = ?, tags = ?, owner_user_id = ? WHERE id = ?').run(alt || '', tags, newOwner, id);
 
     return reply.redirect('/admin/foto?success=1');
   });

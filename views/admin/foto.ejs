@@ -99,6 +99,15 @@
                   <form action="/admin/foto/<%= t.id %>/delete" method="POST" style="margin: 0;" onsubmit="return confirm('Delete this template?');">
                     <button type="submit" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">Delete</button>
                   </form>
+                  <button type="button"
+                          class="btn btn-secondary btn-edit-template"
+                          style="font-size: 12px; padding: 6px 12px;"
+                          data-id="<%= t.id %>"
+                          data-alt="<%= t.alt || '' %>"
+                          data-tags="<%= t.tags || '' %>"
+                          data-owner="<%= t.owner_user_id || '' %>">
+                    Edit
+                  </button>
                 </div>
               </div>
             <% }) %>
@@ -107,6 +116,41 @@
       </div>
     </div>
   </main>
+
+  <!-- Edit Template Modal -->
+  <div id="editModal" style="display:none; position:fixed; inset:0; background: rgba(0,0,0,0.5); z-index: 1200; align-items: center; justify-content: center;">
+    <div style="background:#fff; border-radius: 12px; padding: 20px; width: 420px; max-width: 90vw; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">Edit template</h3>
+        <button type="button" id="editClose" style="background:none; border:none; font-size:20px; cursor:pointer;">&times;</button>
+      </div>
+      <form id="editForm" method="POST">
+        <div class="form-group">
+          <label for="editAlt">Description</label>
+          <input type="text" id="editAlt" name="alt" style="width:100%;">
+        </div>
+        <div class="form-group">
+          <label for="editTags">Tags (comma-separated)</label>
+          <input type="text" id="editTags" name="tags" style="width:100%;">
+        </div>
+        <% if (user.role === 'admin') { %>
+          <div class="form-group">
+            <label for="editOwner">Owner (user)</label>
+            <select id="editOwner" name="owner_user_id" style="width:100%;">
+              <option value="">— Not set —</option>
+              <% users.forEach(u => { %>
+                <option value="<%= u.id %>"><%= u.email %></option>
+              <% }); %>
+            </select>
+          </div>
+        <% } %>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
+          <button type="button" id="editCancel" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Lightbox -->
   <div id="lightbox" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; cursor: pointer;" onclick="closeLightbox()">
@@ -231,6 +275,46 @@
     // Close modal on backdrop click
     promptModal.addEventListener('click', (e) => {
       if (e.target === promptModal) hidePromptModal();
+    });
+
+    // Edit modal
+    const editModal = document.getElementById('editModal');
+    const editForm = document.getElementById('editForm');
+    const editAlt = document.getElementById('editAlt');
+    const editTags = document.getElementById('editTags');
+    const editOwner = document.getElementById('editOwner');
+    const editClose = document.getElementById('editClose');
+    const editCancel = document.getElementById('editCancel');
+
+    function openEditModal(data) {
+      editForm.action = `/admin/foto/${data.id}/update`;
+      editAlt.value = data.alt || '';
+      editTags.value = data.tags || '';
+      if (editOwner) {
+        editOwner.value = data.owner || '';
+      }
+      editModal.style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      editModal.style.display = 'none';
+    }
+
+    document.querySelectorAll('.btn-edit-template').forEach(btn => {
+      btn.addEventListener('click', () => {
+        openEditModal({
+          id: btn.dataset.id,
+          alt: btn.dataset.alt,
+          tags: btn.dataset.tags,
+          owner: btn.dataset.owner,
+        });
+      });
+    });
+
+    editClose?.addEventListener('click', closeEditModal);
+    editCancel?.addEventListener('click', closeEditModal);
+    editModal?.addEventListener('click', (e) => {
+      if (e.target === editModal) closeEditModal();
     });
   </script>
 </body>
