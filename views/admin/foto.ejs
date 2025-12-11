@@ -17,8 +17,10 @@
     <div class="admin-nav">
       <a href="/admin/posts" class="admin-nav-link">Posts</a>
       <a href="/admin/foto" class="admin-nav-link admin-nav-link--active">Foto</a>
-      <a href="/admin/users" class="admin-nav-link">Users</a>
-      <a href="/admin/audit" class="admin-nav-link">Audit Log</a>
+      <% if (user.role === 'admin') { %>
+        <a href="/admin/users" class="admin-nav-link">Users</a>
+        <a href="/admin/audit" class="admin-nav-link">Audit Log</a>
+      <% } %>
       <div class="admin-user">
         <span><%= user.email %></span>
         <a href="/admin/logout" class="admin-nav-link">Logout</a>
