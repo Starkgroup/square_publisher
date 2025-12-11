@@ -29,10 +29,11 @@ export default async function ingestRoutes(fastify) {
       const summary = generateSummary(validatedData.text);
 
       const result = db.prepare(`
-        INSERT INTO posts (slug, text, summary, status, source, ext_id, tag, link, client_key)
-        VALUES (?, ?, ?, 'draft', ?, ?, ?, ?, ?)
+        INSERT INTO posts (slug, title, text, summary, status, source, ext_id, tag, link, client_key)
+        VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?)
       `).run(
         slug,
+        validatedData.title,
         validatedData.text,
         summary,
         validatedData.source,
