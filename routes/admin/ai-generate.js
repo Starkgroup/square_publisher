@@ -30,14 +30,24 @@ export default async function aiGenerateRoutes(fastify) {
   // Get all template images
   fastify.get('/admin/ai/templates', {
     onRequest: [fastify.requireAuth],
-  }, async (_request, reply) => {
+  }, async (request, reply) => {
     const db = getDb();
+    const isAdmin = request.session.role === 'admin';
+    const userId = request.session.userId;
+
+    const where = ['is_template = 1'];
+    const params = [];
+    if (!isAdmin) {
+      where.push('owner_user_id = ?');
+      params.push(userId);
+    }
+
     const templates = db.prepare(`
-      SELECT id, path, url, mime, size_bytes, alt, created_at
+      SELECT id, path, url, mime, size_bytes, alt, owner_user_id, created_at
       FROM media
-      WHERE is_template = 1
+      WHERE ${where.join(' AND ')}
       ORDER BY created_at DESC
-    `).all();
+    `).all(...params);
     return reply.send({ templates });
   });
 
@@ -55,23 +65,28 @@ export default async function aiGenerateRoutes(fastify) {
       return reply.status(404).send({ error: 'Post not found', code: 'NOT_FOUND' });
     }
 
+    const isAdmin = request.session.role === 'admin';
+    const userId = request.session.userId;
+
     // Get template image
     let template;
     if (useRandomTemplate || !templateId) {
-      // Get random template
       template = db.prepare(`
-        SELECT id, path, url, mime
+        SELECT id, path, url, mime, owner_user_id
         FROM media
-        WHERE is_template = 1
+        WHERE is_template = 1 ${isAdmin ? '' : 'AND owner_user_id = ?'}
         ORDER BY RANDOM()
         LIMIT 1
-      `).get();
+      `).get(...(isAdmin ? [] : [userId]));
     } else {
       template = db.prepare(`
-        SELECT id, path, url, mime
+        SELECT id, path, url, mime, owner_user_id
         FROM media
         WHERE id = ? AND is_template = 1
       `).get(templateId);
+      if (template && !isAdmin && template.owner_user_id !== userId) {
+        template = null;
+      }
     }
 
     if (!template) {
@@ -171,22 +186,28 @@ export default async function aiGenerateRoutes(fastify) {
       });
     }
 
+    const isAdmin = request.session.role === 'admin';
+    const userId = request.session.userId;
+
     // Get template image
     let template;
     if (useRandomTemplate || !templateId) {
       template = db.prepare(`
-        SELECT id, path, url, mime
+        SELECT id, path, url, mime, owner_user_id
         FROM media
-        WHERE is_template = 1
+        WHERE is_template = 1 ${isAdmin ? '' : 'AND owner_user_id = ?'}
         ORDER BY RANDOM()
         LIMIT 1
-      `).get();
+      `).get(...(isAdmin ? [] : [userId]));
     } else {
       template = db.prepare(`
-        SELECT id, path, url, mime
+        SELECT id, path, url, mime, owner_user_id
         FROM media
         WHERE id = ? AND is_template = 1
       `).get(templateId);
+      if (template && !isAdmin && template.owner_user_id !== userId) {
+        template = null;
+      }
     }
 
     if (!template) {

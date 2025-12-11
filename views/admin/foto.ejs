@@ -58,6 +58,10 @@
               <label for="alt" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Description (optional)</label>
               <input type="text" id="alt" name="alt" placeholder="e.g., Blue background with person" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
             </div>
+            <div style="flex: 1; min-width: 200px;">
+              <label for="tags" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Tags (comma-separated)</label>
+              <input type="text" id="tags" name="tags" placeholder="Finance, Technology" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
             <button type="submit" class="btn btn-primary">Upload Template</button>
           </div>
         </form>
@@ -81,6 +85,12 @@
                   <div><strong>ID:</strong> #<%= t.id %></div>
                   <div><strong>Size:</strong> <%= Math.round(t.size_bytes / 1024) %> KB</div>
                   <div><strong>Added:</strong> <%= new Date(t.created_at).toLocaleDateString() %></div>
+                  <% if (t.tags) { %>
+                    <div style="margin-top: 4px;">
+                      <strong>Tags:</strong>
+                      <span><%= t.tags %></span>
+                    </div>
+                  <% } %>
                   <% if (t.alt) { %>
                     <div style="margin-top: 4px; font-style: italic;"><%= t.alt %></div>
                   <% } %>
