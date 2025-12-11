@@ -49,7 +49,7 @@ export default async function adminUsersRoutes(fastify) {
   fastify.post('/admin/users', {
     preHandler: [fastify.requireAuth, fastify.requireAdmin],
   }, async (request, reply) => {
-    const { email, password, role } = request.body;
+    const { email, password, role, client_key } = request.body;
 
     // Validation
     if (!email || !email.trim()) {
@@ -66,6 +66,11 @@ export default async function adminUsersRoutes(fastify) {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+    const trimmedClientKey = client_key ? client_key.trim() : null;
+
+    if (trimmedClientKey && trimmedClientKey.length > 100) {
+      return reply.redirect('/admin/users/new?error=client_key_too_long');
+    }
 
     // Check if email exists
     if (emailExists(normalizedEmail)) {
@@ -73,12 +78,13 @@ export default async function adminUsersRoutes(fastify) {
     }
 
     try {
-      const userId = await createUser(normalizedEmail, password, role);
+      const userId = await createUser(normalizedEmail, password, role, trimmedClientKey);
 
       logAudit(null, request.session.email, 'user_created', {
         created_user_id: userId,
         created_email: normalizedEmail,
         role,
+        client_key: trimmedClientKey,
       });
 
       fastify.log.info({
@@ -153,8 +159,13 @@ export default async function adminUsersRoutes(fastify) {
     }
 
     try {
-      // Update user details
       const trimmedClientKey = client_key ? client_key.trim() : null;
+
+      if (trimmedClientKey && trimmedClientKey.length > 100) {
+        return reply.redirect(`/admin/users/${id}/edit?error=client_key_too_long`);
+      }
+
+      // Update user details
       updateUser(userId, { email: normalizedEmail, role, client_key: trimmedClientKey });
 
       // Update password if provided
@@ -169,6 +180,7 @@ export default async function adminUsersRoutes(fastify) {
         updated_user_id: userId,
         updated_email: normalizedEmail,
         role,
+        client_key: trimmedClientKey,
         password_changed: !!password,
       });
 
