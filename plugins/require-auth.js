@@ -30,6 +30,22 @@ async function requireAuthPlugin(fastify) {
       }
     };
   });
+
+  /**
+   * Require admin role
+   */
+  fastify.decorate('requireAdmin', async function (request, reply) {
+    if (!request.session.userId) {
+      return reply.redirect('/admin/login');
+    }
+
+    if (request.session.role !== 'admin') {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        code: 'ADMIN_REQUIRED',
+      });
+    }
+  });
 }
 
 export default fp(requireAuthPlugin);

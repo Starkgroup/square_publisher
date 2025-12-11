@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users - Square Publisher</title>
+  <link rel="stylesheet" href="/public/css/admin.css">
+</head>
+<body class="admin-page">
+  <header class="admin-header">
+    <div class="admin-brand">
+      <div class="admin-brand-mark">
+        <img src="/public/img/logo.png" alt="Square Capital Consulting logo" class="admin-brand-logo">
+      </div>
+      <div class="admin-brand-text">Square Capital Consulting</div>
+    </div>
+    <div class="admin-nav">
+      <a href="/admin/posts" class="admin-nav-link">Posts</a>
+      <a href="/admin/foto" class="admin-nav-link">Foto</a>
+      <a href="/admin/users" class="admin-nav-link admin-nav-link--active">Users</a>
+      <a href="/admin/audit" class="admin-nav-link">Audit Log</a>
+      <div class="admin-user">
+        <span><%= currentUser.email %></span>
+        <form action="/admin/logout" method="POST">
+          <button type="submit" class="btn btn-secondary">Logout</button>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <div class="container">
+      <div class="page-header">
+        <h1>Users</h1>
+        <a href="/admin/users/new" class="btn btn-primary">New User</a>
+      </div>
+
+      <% if (success) { %>
+        <div class="alert alert-success">
+          <% if (success === 'user_created') { %>
+            User created successfully.
+          <% } else if (success === 'user_updated') { %>
+            User updated successfully.
+          <% } else if (success === 'user_deleted') { %>
+            User deleted successfully.
+          <% } %>
+        </div>
+      <% } %>
+
+      <% if (error) { %>
+        <div class="alert alert-error">
+          <% if (error === 'user_not_found') { %>
+            User not found.
+          <% } else if (error === 'cannot_delete_self') { %>
+            You cannot delete your own account.
+          <% } else { %>
+            An error occurred.
+          <% } %>
+        </div>
+      <% } %>
+
+      <div class="users-table">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Created</th>
+              <th>Last Login</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (users.length === 0) { %>
+              <tr>
+                <td colspan="6" style="text-align: center; color: #999;">No users found</td>
+              </tr>
+            <% } else { %>
+              <% users.forEach(user => { %>
+                <tr>
+                  <td>#<%= user.id %></td>
+                  <td><%= user.email %></td>
+                  <td>
+                    <span class="role role-<%= user.role %>"><%= user.role %></span>
+                  </td>
+                  <td><%= new Date(user.created_at).toLocaleDateString() %></td>
+                  <td>
+                    <% if (user.last_login_at) { %>
+                      <%= new Date(user.last_login_at).toLocaleString() %>
+                    <% } else { %>
+                      <span class="text-muted">Never</span>
+                    <% } %>
+                  </td>
+                  <td class="actions">
+                    <a href="/admin/users/<%= user.id %>/edit" class="btn btn-secondary btn-sm">Edit</a>
+                    <% if (user.id !== currentUser.userId) { %>
+                      <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete(<%= user.id %>, '<%= user.email %>')">Delete</button>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h2>Confirm Delete</h2>
+      <p>Are you sure you want to delete user <strong id="deleteUserEmail"></strong>?</p>
+      <p class="text-muted">This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+        <form id="deleteForm" method="POST" style="display: inline;">
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .page-header h1 {
+      margin: 0;
+    }
+    .users-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .users-table th,
+    .users-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .users-table th {
+      font-weight: 600;
+      color: #374151;
+      background: #f9fafb;
+    }
+    .role {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .role-admin {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+    .role-editor {
+      background: #d1fae5;
+      color: #047857;
+    }
+    .actions {
+      white-space: nowrap;
+    }
+    .actions .btn {
+      margin-right: 4px;
+    }
+    .btn-sm {
+      padding: 4px 8px;
+      font-size: 13px;
+    }
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+      border: none;
+    }
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+    .alert {
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+    .alert-success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+    .alert-error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+    .text-muted {
+      color: #6b7280;
+    }
+    
+    /* Modal styles */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 90%;
+    }
+    .modal-content h2 {
+      margin: 0 0 16px 0;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+  </style>
+
+  <script>
+    function confirmDelete(userId, email) {
+      document.getElementById('deleteUserEmail').textContent = email;
+      document.getElementById('deleteForm').action = '/admin/users/' + userId + '/delete';
+      document.getElementById('deleteModal').style.display = 'flex';
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').style.display = 'none';
+    }
+
+    // Close modal on outside click
+    document.getElementById('deleteModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeDeleteModal();
+      }
+    });
+  </script>
+</body>
+</html>

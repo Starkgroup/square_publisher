@@ -64,4 +64,21 @@ export default {
     quality: env.OPENAI_IMAGE_QUALITY || 'high',
     outputFormat: env.OPENAI_IMAGE_FORMAT || 'png',
   },
+
+  email: {
+    host: env.EMAIL_HOST || '',
+    port: parseInt(env.EMAIL_PORT, 10) || 587,
+    user: env.EMAIL_USER || '',
+    password: env.EMAIL_PASSWORD || '',
+    useTls: env.EMAIL_USE_TLS !== 'false',
+    fromName: env.EMAIL_FROM_NAME || 'Square Publisher',
+    rateLimit: parseInt(env.EMAIL_RATE_LIMIT, 10) || 60,
+    timeout: parseInt(env.EMAIL_TIMEOUT, 10) || 10,
+  },
+
+  magicLink: {
+    ttlMinutes: parseInt(env.MAGIC_LINK_TTL_MINUTES, 10) || 60,
+    maxPerHour: parseInt(env.MAGIC_LINK_MAX_PER_HOUR, 10) || 10,
+    rateLimit: parseInt(env.MAGIC_LINK_RATE_LIMIT, 10) || 20,
+  },
 };

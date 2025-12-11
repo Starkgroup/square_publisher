@@ -91,7 +91,7 @@ export default async function adminAuthRoutes(fastify) {
       }, 'User logged out');
     }
 
-    request.session.delete();
+    request.session.destroy();
     return reply.redirect('/admin/login');
   });
 }

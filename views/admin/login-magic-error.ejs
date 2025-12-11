@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Error - Square Publisher</title>
+  <link rel="stylesheet" href="/public/css/admin.css">
+</head>
+<body class="auth-page">
+  <header class="admin-header">
+    <div class="admin-brand">
+      <div class="admin-brand-mark">
+        <img src="/public/img/logo.png" alt="Square Capital Consulting logo" class="admin-brand-logo">
+      </div>
+      <div class="admin-brand-text">Square Capital Consulting</div>
+    </div>
+    <div class="admin-user">
+      <span class="text-muted">Login</span>
+    </div>
+  </header>
+
+  <main class="auth-main">
+    <div class="login-container">
+      <h1 class="login-title">Link Error</h1>
+      
+      <div class="error-box">
+        <% if (error === 'invalid_link') { %>
+          <p><strong>Invalid link</strong></p>
+          <p>This login link is invalid or does not exist.</p>
+        <% } else if (error === 'already_used') { %>
+          <p><strong>Link already used</strong></p>
+          <p>This login link has already been used. Each link can only be used once.</p>
+        <% } else if (error === 'expired') { %>
+          <p><strong>Link expired</strong></p>
+          <p>This login link has expired. Please request a new one.</p>
+        <% } else { %>
+          <p><strong>Error</strong></p>
+          <p>An error occurred while processing your login link.</p>
+        <% } %>
+      </div>
+      
+      <a href="/login" class="btn btn-primary">Request New Link</a>
+      
+      <div class="login-footer">
+        <a href="/admin/login" class="text-muted">Admin login with password</a>
+      </div>
+    </div>
+  </main>
+  
+  <style>
+    .error-box {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+      padding: 16px 20px;
+      border-radius: 6px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .error-box p {
+      margin: 0;
+    }
+    .error-box p + p {
+      margin-top: 8px;
+      font-size: 14px;
+    }
+    .login-footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 13px;
+    }
+    .login-footer a {
+      color: #666;
+      text-decoration: none;
+    }
+    .login-footer a:hover {
+      color: #2563eb;
+      text-decoration: underline;
+    }
+  </style>
+</body>
+</html>
