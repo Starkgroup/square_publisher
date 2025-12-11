@@ -128,7 +128,7 @@ export default async function adminUsersRoutes(fastify) {
   }, async (request, reply) => {
     const { id } = request.params;
     const userId = parseInt(id, 10);
-    const { email, password, role } = request.body;
+    const { email, password, role, client_key } = request.body;
 
     const user = getUserById(userId);
     if (!user) {
@@ -154,7 +154,8 @@ export default async function adminUsersRoutes(fastify) {
 
     try {
       // Update user details
-      updateUser(userId, { email: normalizedEmail, role });
+      const trimmedClientKey = client_key ? client_key.trim() : null;
+      updateUser(userId, { email: normalizedEmail, role, client_key: trimmedClientKey });
 
       // Update password if provided
       if (password && password.length > 0) {

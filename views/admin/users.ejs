@@ -66,6 +66,7 @@
               <th>ID</th>
               <th>Email</th>
               <th>Role</th>
+              <th>Client Key</th>
               <th>Created</th>
               <th>Last Login</th>
               <th>Actions</th>
@@ -74,7 +75,7 @@
           <tbody>
             <% if (users.length === 0) { %>
               <tr>
-                <td colspan="6" style="text-align: center; color: #999;">No users found</td>
+                <td colspan="7" style="text-align: center; color: #999;">No users found</td>
               </tr>
             <% } else { %>
               <% users.forEach(user => { %>
@@ -84,6 +85,7 @@
                   <td>
                     <span class="role role-<%= user.role %>"><%= user.role %></span>
                   </td>
+                  <td><%= user.client_key || '' %></td>
                   <td><%= new Date(user.created_at).toLocaleDateString() %></td>
                   <td>
                     <% if (user.last_login_at) { %>

@@ -50,6 +50,7 @@ export default async function adminAuthRoutes(fastify) {
       request.session.userId = user.id;
       request.session.email = user.email;
       request.session.role = user.role;
+      request.session.clientKey = user.client_key || null;
 
       // Update last login
       updateLastLogin(user.id);

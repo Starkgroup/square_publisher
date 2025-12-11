@@ -68,6 +68,15 @@
           </div>
 
           <div class="form-group">
+            <label for="client_key">Client Key <span class="text-muted">(for Make.com mapping)</span></label>
+            <input type="text" id="client_key" name="client_key"
+                   value="<%= user ? (user.client_key || '') : '' %>"
+                   placeholder="e.g. squarecc_alex"
+                   maxlength="100">
+            <small class="form-hint">Same key used in Make.com scenario</small>
+          </div>
+
+          <div class="form-group">
             <label for="password">
               <% if (isNew) { %>
                 Password

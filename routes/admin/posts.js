@@ -18,9 +18,24 @@ export default async function adminPostsRoutes(fastify) {
     let query = 'SELECT id, slug, title, summary, status, pub_date, created_at, updated_at FROM posts';
     const params = [];
 
+    const isAdmin = request.session.role === 'admin';
+    const clientKey = request.session.clientKey || null;
+
+    const whereClauses = [];
+
     if (status) {
-      query += ' WHERE status = ?';
+      whereClauses.push('status = ?');
       params.push(status);
+    }
+
+    // For non-admin users, restrict posts to their client_key (if set)
+    if (!isAdmin && clientKey) {
+      whereClauses.push('client_key = ?');
+      params.push(clientKey);
+    }
+
+    if (whereClauses.length > 0) {
+      query += ' WHERE ' + whereClauses.join(' AND ');
     }
 
     query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
@@ -28,16 +43,21 @@ export default async function adminPostsRoutes(fastify) {
 
     const posts = db.prepare(query).all(...params);
 
-    // Get total count
+    // Get total count (with same filters)
     let countQuery = 'SELECT COUNT(*) as total FROM posts';
-    if (status) {
-      countQuery += ' WHERE status = ?';
-      const { total } = db.prepare(countQuery).get(status);
-      var totalCount = total;
-    } else {
-      const { total } = db.prepare(countQuery).get();
-      var totalCount = total;
+    const countParams = [];
+
+    if (whereClauses.length > 0) {
+      countQuery += ' WHERE ' + whereClauses.join(' AND ');
+      if (status) {
+        countParams.push(status);
+      }
+      if (!isAdmin && clientKey) {
+        countParams.push(clientKey);
+      }
     }
+
+    const { total: totalCount } = db.prepare(countQuery).get(...countParams);
 
     const totalPages = Math.ceil(totalCount / parseInt(limit, 10));
 
