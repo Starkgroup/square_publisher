@@ -45,13 +45,29 @@
         <strong>Slug:</strong> <%= post.slug %><br>
         <strong>Created:</strong> <%= new Date(post.created_at).toLocaleString() %><br>
         <strong>Updated:</strong> <%= new Date(post.updated_at).toLocaleString() %><br>
-        <strong>Version:</strong> <%= post.version %>
+        <strong>Version:</strong> <%= post.version %><br>
+        <% if (post.client_key) { %>
+          <strong>Client key:</strong> <%= post.client_key %>
+        <% } %>
       </div>
 
       <form id="editForm">
         <div class="form-group">
           <label for="title">Title (optional)</label>
           <input type="text" id="title" name="title" value="<%= post.title || '' %>" maxlength="200">
+        </div>
+
+        <div class="form-group">
+          <label for="link">Source link (optional)</label>
+          <input type="url" id="link" name="link" value="<%= post.link || '' %>" maxlength="2048">
+          <% if (post.link) { %>
+            <div style="margin-top: 4px; font-size: 12px; color: #4b5563; word-break: break-all;">
+              <strong>Preview:</strong>
+              <a href="<%= post.link %>" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline;">
+                <%= post.link %>
+              </a>
+            </div>
+          <% } %>
         </div>
 
         <div class="form-group">
