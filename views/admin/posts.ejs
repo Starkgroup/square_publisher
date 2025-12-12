@@ -19,6 +19,15 @@
     </div>
     <div class="admin-nav">
       <a href="/admin/posts" class="admin-nav-link admin-nav-link--active">Posts</a>
+      <% if (user.role !== 'admin') { %>
+        <div class="admin-nav-toggle">
+          <span class="admin-nav-toggle-label">Auto-Publish posts</span>
+          <label class="toggle-switch toggle-switch--sm">
+            <input type="checkbox" id="autoPublishToggle" <%= autoPublishEnabled ? 'checked' : '' %>>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      <% } %>
       <a href="/admin/foto" class="admin-nav-link">Foto</a>
       <% if (user.role==='admin' ) { %>
         <a href="/admin/users" class="admin-nav-link">Users</a>
@@ -26,7 +35,7 @@
         <% } %>
           <div class="admin-user">
             <span>
-              <%= user.email %>
+              <%= user.name || user.email %>
             </span>
             <form action="/admin/logout" method="POST">
               <button type="submit" class="btn btn-secondary">Logout</button>
@@ -63,14 +72,14 @@
                   <div class="user-card <%= u.auto_publish_enabled ? 'active' : '' %>">
                     <div class="user-info">
                       <div class="user-avatar">
-                        <%= u.email.charAt(0).toUpperCase() %>
+                        <%= (u.name || u.email).charAt(0).toUpperCase() %>
                       </div>
                       <div class="user-details">
                         <span class="user-email" title="<%= u.email %>">
-                          <%= u.email %>
+                          <%= u.name || u.email %>
                         </span>
                         <span class="user-key">
-                          <%= u.client_key || 'No Key' %>
+                          <%= u.email %>
                         </span>
                       </div>
                     </div>
@@ -86,21 +95,7 @@
                     <% } %>
           </div>
         </div>
-        <% } else { %>
-          <!-- Editor View: Simple Toggle -->
-          <div class="dashboard-panel">
-            <div class="dashboard-panel-header">
-              <h3>Auto-Publish</h3>
-              <div class="auto-publish-toggle">
-                <label class="toggle-switch">
-                  <input type="checkbox" id="autoPublishToggle" <%=autoPublishEnabled ? 'checked' : '' %>>
-                  <span class="toggle-slider"></span>
-                </label>
-                <span class="toggle-label">Enable Automatic Publishing</span>
-              </div>
-            </div>
-          </div>
-          <% } %>
+        <% } %>
 
             <!-- Posts Table -->
             <div class="posts-table-wrapper">
@@ -183,7 +178,7 @@
                             <td class="td-owner">
                               <% if (post.client_key && clientKeyToUserMap && clientKeyToUserMap[post.client_key]) { %>
                                 <div class="owner-badge" title="<%= clientKeyToUserMap[post.client_key].email %>">
-                                  <%= clientKeyToUserMap[post.client_key].email.split('@')[0] %>
+                                  <%= clientKeyToUserMap[post.client_key].name || clientKeyToUserMap[post.client_key].email.split('@')[0] %>
                                 </div>
                                 <% } else { %>
                                   <span class="text-muted">-</span>
@@ -275,6 +270,89 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
+    }
+
+    .admin-nav-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: 12px;
+      padding: 6px 10px;
+      border: 1px solid #E5E7EB;
+      border-radius: 999px;
+      background: #FFFFFF;
+    }
+
+    .admin-nav-toggle-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      white-space: nowrap;
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .toggle-switch--sm {
+      width: 40px;
+      height: 22px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #D1D5DB;
+      transition: 0.2s;
+      border-radius: 999px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      top: 3px;
+      background-color: #FFFFFF;
+      transition: 0.2s;
+      border-radius: 50%;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-switch--sm .toggle-slider:before {
+      height: 16px;
+      width: 16px;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: #2563EB;
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+    }
+
+    .toggle-switch--sm input:checked + .toggle-slider:before {
+      transform: translateX(18px);
+    }
+
+    .toggle-switch input:focus + .toggle-slider {
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
     }
 
     .users-grid {
@@ -551,6 +629,7 @@
       border-color: #2563EB;
       outline: none;
     }
+
   </style>
 
   <script>

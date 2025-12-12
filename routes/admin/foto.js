@@ -52,6 +52,7 @@ export default async function adminFotoRoutes(fastify) {
       templates,
       user: {
         email: request.session.email,
+        name: request.session.name || null,
         role: request.session.role,
       },
       users,

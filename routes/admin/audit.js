@@ -45,7 +45,7 @@ export default async function adminAuditRoutes(fastify) {
       page: parseInt(page, 10),
       limit: limitInt,
       filters: { action, user_email, post_id },
-      user: { email: request.session.email },
+      user: { email: request.session.email, name: request.session.name || null },
     });
   });
 

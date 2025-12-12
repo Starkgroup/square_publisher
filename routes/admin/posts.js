@@ -95,6 +95,7 @@ export default async function adminPostsRoutes(fastify) {
       posts,
       user: {
         email: request.session.email,
+        name: request.session.name || null,
         role: request.session.role,
         userId: request.session.userId,
       },
@@ -139,6 +140,7 @@ export default async function adminPostsRoutes(fastify) {
       media,
       user: {
         email: request.session.email,
+        name: request.session.name || null,
         role: request.session.role,
       },
       success: request.query.success,

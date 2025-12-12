@@ -20,7 +20,7 @@
       <a href="/admin/users" class="admin-nav-link">Users</a>
       <a href="/admin/audit" class="admin-nav-link admin-nav-link--active">Audit Log</a>
       <div class="admin-user">
-        <span><%= user.email %></span>
+        <span><%= user.name || user.email %></span>
       </div>
     </div>
   </header>

@@ -1,4 +1,5 @@
 import fp from 'fastify-plugin';
+import { getUserById } from '../lib/users.js';
 
 /**
  * Authentication middleware plugin
@@ -10,6 +11,11 @@ async function requireAuthPlugin(fastify) {
   fastify.decorate('requireAuth', async function (request, reply) {
     if (!request.session.userId) {
       return reply.redirect('/admin/login');
+    }
+
+    if (request.session.name === undefined) {
+      const user = getUserById(request.session.userId);
+      request.session.name = user ? (user.name || null) : null;
     }
   });
 
@@ -37,6 +43,11 @@ async function requireAuthPlugin(fastify) {
   fastify.decorate('requireAdmin', async function (request, reply) {
     if (!request.session.userId) {
       return reply.redirect('/admin/login');
+    }
+
+    if (request.session.name === undefined) {
+      const user = getUserById(request.session.userId);
+      request.session.name = user ? (user.name || null) : null;
     }
 
     if (request.session.role !== 'admin') {

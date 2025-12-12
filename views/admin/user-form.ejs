@@ -20,7 +20,7 @@
       <a href="/admin/users" class="admin-nav-link admin-nav-link--active">Users</a>
       <a href="/admin/audit" class="admin-nav-link">Audit Log</a>
       <div class="admin-user">
-        <span><%= currentUser.email %></span>
+        <span><%= currentUser.name || currentUser.email %></span>
         <form action="/admin/logout" method="POST">
           <button type="submit" class="btn btn-secondary">Logout</button>
         </form>
