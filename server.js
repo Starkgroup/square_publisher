@@ -15,6 +15,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import config from './config/index.js';
 import { initDb } from './db/index.js';
+import { runMigrations } from './db/migrate.js';
 import { initDefaultAdmin } from './lib/users.js';
 import { startAutoPublishWorker, stopAutoPublishWorker } from './lib/auto-publish-worker.js';
 
@@ -65,6 +66,9 @@ const fastify = Fastify({
 
 // Initialize database
 initDb(config.db.path);
+
+// Apply pending migrations
+runMigrations();
 
 // Initialize default admin user
 await initDefaultAdmin(config.auth.adminUser, config.auth.adminPass);

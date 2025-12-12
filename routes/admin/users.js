@@ -49,7 +49,7 @@ export default async function adminUsersRoutes(fastify) {
   fastify.post('/admin/users', {
     preHandler: [fastify.requireAuth, fastify.requireAdmin],
   }, async (request, reply) => {
-    const { email, password, role, client_key } = request.body;
+    const { email, password, role, client_key, name } = request.body;
 
     // Validation
     if (!email || !email.trim()) {
@@ -67,9 +67,14 @@ export default async function adminUsersRoutes(fastify) {
 
     const normalizedEmail = email.trim().toLowerCase();
     const trimmedClientKey = client_key ? client_key.trim() : null;
+    const trimmedName = name ? name.trim() : null;
 
     if (trimmedClientKey && trimmedClientKey.length > 100) {
       return reply.redirect('/admin/users/new?error=client_key_too_long');
+    }
+
+    if (trimmedName && trimmedName.length > 100) {
+      return reply.redirect('/admin/users/new?error=name_too_long');
     }
 
     // Check if email exists
@@ -78,11 +83,12 @@ export default async function adminUsersRoutes(fastify) {
     }
 
     try {
-      const userId = await createUser(normalizedEmail, password, role, trimmedClientKey);
+      const userId = await createUser(normalizedEmail, password, role, trimmedClientKey, trimmedName);
 
       logAudit(null, request.session.email, 'user_created', {
         created_user_id: userId,
         created_email: normalizedEmail,
+        name: trimmedName,
         role,
         client_key: trimmedClientKey,
       });
@@ -91,6 +97,7 @@ export default async function adminUsersRoutes(fastify) {
         admin_id: request.session.userId,
         created_user_id: userId,
         created_email: normalizedEmail,
+        name: trimmedName,
         role,
         trace_id: request.id,
       }, 'User created');
@@ -134,7 +141,7 @@ export default async function adminUsersRoutes(fastify) {
   }, async (request, reply) => {
     const { id } = request.params;
     const userId = parseInt(id, 10);
-    const { email, password, role, client_key } = request.body;
+    const { email, password, role, client_key, name } = request.body;
 
     const user = getUserById(userId);
     if (!user) {
@@ -160,13 +167,18 @@ export default async function adminUsersRoutes(fastify) {
 
     try {
       const trimmedClientKey = client_key ? client_key.trim() : null;
+      const trimmedName = name ? name.trim() : null;
 
       if (trimmedClientKey && trimmedClientKey.length > 100) {
         return reply.redirect(`/admin/users/${id}/edit?error=client_key_too_long`);
       }
 
+      if (trimmedName && trimmedName.length > 100) {
+        return reply.redirect(`/admin/users/${id}/edit?error=name_too_long`);
+      }
+
       // Update user details
-      updateUser(userId, { email: normalizedEmail, role, client_key: trimmedClientKey });
+      updateUser(userId, { email: normalizedEmail, role, client_key: trimmedClientKey, name: trimmedName });
 
       // Update password if provided
       if (password && password.length > 0) {
@@ -179,6 +191,7 @@ export default async function adminUsersRoutes(fastify) {
       logAudit(null, request.session.email, 'user_updated', {
         updated_user_id: userId,
         updated_email: normalizedEmail,
+        name: trimmedName,
         role,
         client_key: trimmedClientKey,
         password_changed: !!password,
@@ -188,6 +201,7 @@ export default async function adminUsersRoutes(fastify) {
         admin_id: request.session.userId,
         updated_user_id: userId,
         updated_email: normalizedEmail,
+        name: trimmedName,
         role,
         password_changed: !!password,
         trace_id: request.id,

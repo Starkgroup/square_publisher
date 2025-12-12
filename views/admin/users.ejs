@@ -65,6 +65,7 @@
             <tr>
               <th>ID</th>
               <th>Email</th>
+              <th>Name</th>
               <th>Role</th>
               <th>Client Key</th>
               <th>Auto-Publish</th>
@@ -76,13 +77,14 @@
           <tbody>
             <% if (users.length === 0) { %>
               <tr>
-                <td colspan="8" style="text-align: center; color: #999;">No users found</td>
+                <td colspan="9" style="text-align: center; color: #999;">No users found</td>
               </tr>
             <% } else { %>
               <% users.forEach(user => { %>
                 <tr>
                   <td>#<%= user.id %></td>
                   <td><%= user.email %></td>
+                  <td><%= user.name || '' %></td>
                   <td>
                     <span class="role role-<%= user.role %>"><%= user.role %></span>
                   </td>
@@ -107,7 +109,7 @@
                   <td class="actions">
                     <a href="/admin/users/<%= user.id %>/edit" class="btn btn-secondary btn-sm">Edit</a>
                     <% if (user.id !== currentUser.userId) { %>
-                      <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete(<%= user.id %>, '<%= user.email %>')">Delete</button>
+                      <button type="button" class="btn btn-danger btn-sm" data-email="<%= user.email %>" onclick="confirmDelete(<%= user.id %>, this.dataset.email)">Delete</button>
                     <% } %>
                   </td>
                 </tr>
