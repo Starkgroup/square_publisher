@@ -32,14 +32,76 @@
 
   <main class="admin-main">
   <div class="container">
-    <div class="filters">
-      <select onchange="window.location.href='/admin/posts?status=' + this.value">
-        <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>All</option>
-        <option value="draft" <%= filters.status === 'draft' ? 'selected' : '' %>>Drafts</option>
-        <option value="published" <%= filters.status === 'published' ? 'selected' : '' %>>Published</option>
-        <option value="archived" <%= filters.status === 'archived' ? 'selected' : '' %>>Archived</option>
-      </select>
+    <div class="filters-row">
+      <div class="filters">
+        <select onchange="window.location.href='/admin/posts?status=' + this.value">
+          <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>All</option>
+          <option value="draft" <%= filters.status === 'draft' ? 'selected' : '' %>>Drafts</option>
+          <option value="published" <%= filters.status === 'published' ? 'selected' : '' %>>Published</option>
+          <option value="archived" <%= filters.status === 'archived' ? 'selected' : '' %>>Archived</option>
+          <option value="warning" <%= filters.status === 'warning' ? 'selected' : '' %>>⚠️ Warning</option>
+        </select>
+      </div>
+
+      <% if (user.role === 'admin') { %>
+        <div class="auto-publish-toggle">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="openModerationPromptModal()">
+            Edit Moderation Prompt
+          </button>
+        </div>
+      <% } else { %>
+        <div class="auto-publish-toggle">
+          <label class="toggle-switch">
+            <input type="checkbox" id="autoPublishToggle" <%= autoPublishEnabled ? 'checked' : '' %>>
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-label">Automatische Veröffentlichung</span>
+        </div>
+      <% } %>
     </div>
+
+    <% if (user.role === 'admin') { %>
+      <div class="card" style="margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+          <h3 style="margin: 0;">Auto-Publish Users</h3>
+          <span class="text-muted">Toggle auto publishing per user</span>
+        </div>
+        <div style="margin-top: 12px; overflow-x: auto;">
+          <table class="users-mini-table">
+            <thead>
+              <tr>
+                <th style="width: 120px;">Auto-Publish</th>
+                <th>Email</th>
+                <th>Client Key</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (!usersForAutoPublish || usersForAutoPublish.length === 0) { %>
+                <tr>
+                  <td colspan="3" style="text-align: center; color: #999;">No users found</td>
+                </tr>
+              <% } else { %>
+                <% usersForAutoPublish.forEach(u => { %>
+                  <tr>
+                    <td>
+                      <label class="toggle-switch toggle-switch--sm">
+                        <input type="checkbox"
+                               class="auto-publish-user-toggle"
+                               data-user-id="<%= u.id %>"
+                               <%= u.auto_publish_enabled ? 'checked' : '' %>>
+                        <span class="toggle-slider"></span>
+                      </label>
+                    </td>
+                    <td><%= u.email %></td>
+                    <td><%= u.client_key || '' %></td>
+                  </tr>
+                <% }) %>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    <% } %>
 
     <div class="posts-table">
       <table>
@@ -91,5 +153,230 @@
     <% } %>
   </div>
   </main>
+
+  <!-- Moderation Prompt Modal -->
+  <div id="moderationPromptModal" class="modal" style="display: none;">
+    <div class="modal-content modal-lg">
+      <h2>Edit Moderation Prompt</h2>
+      <p class="text-muted">This prompt is used to check posts before auto-publishing. Use <code>{{text}}</code> as placeholder for post text.</p>
+      <textarea id="moderationPromptText" rows="15" style="width: 100%; font-family: monospace; font-size: 13px;"></textarea>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModerationPromptModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="saveModerationPrompt()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .filters-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .auto-publish-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+    }
+    .toggle-switch--sm {
+      width: 40px;
+      height: 22px;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .3s;
+      border-radius: 26px;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    .toggle-switch--sm .toggle-slider:before {
+      height: 16px;
+      width: 16px;
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: #2563eb;
+    }
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(22px);
+    }
+    .toggle-switch--sm input:checked + .toggle-slider:before {
+      transform: translateX(18px);
+    }
+    .toggle-label {
+      font-size: 14px;
+      color: #374151;
+    }
+    .status-warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .btn-sm {
+      padding: 4px 10px;
+      font-size: 13px;
+    }
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 90%;
+    }
+    .modal-lg {
+      max-width: 700px;
+    }
+    .modal-content h2 {
+      margin: 0 0 12px 0;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 16px;
+    }
+    .text-muted {
+      color: #6b7280;
+      font-size: 13px;
+    }
+    .card {
+      background: white;
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    .users-mini-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .users-mini-table th,
+    .users-mini-table td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 14px;
+    }
+    .users-mini-table th {
+      font-weight: 600;
+      color: #374151;
+      background: #f9fafb;
+    }
+  </style>
+
+  <script>
+    // Auto-publish toggle (non-admin)
+    const autoPublishToggle = document.getElementById('autoPublishToggle');
+    if (autoPublishToggle) {
+      autoPublishToggle.addEventListener('change', async function() {
+        const enabled = this.checked;
+        try {
+          const res = await fetch('/admin/auto-publish/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled })
+          });
+          if (!res.ok) throw new Error('Failed to toggle');
+        } catch (err) {
+          alert('Failed to update auto-publish setting');
+          this.checked = !enabled;
+        }
+      });
+    }
+
+    // Auto-publish toggles (admin per user)
+    document.querySelectorAll('.auto-publish-user-toggle').forEach(function(el) {
+      el.addEventListener('change', async function() {
+        const userId = this.dataset.userId;
+        const enabled = this.checked;
+        try {
+          const res = await fetch('/admin/users/' + userId + '/auto-publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled })
+          });
+          if (!res.ok) throw new Error('Failed to toggle');
+        } catch (err) {
+          alert('Failed to update auto-publish setting');
+          this.checked = !enabled;
+        }
+      });
+    });
+
+    // Moderation prompt modal
+    async function openModerationPromptModal() {
+      try {
+        const res = await fetch('/admin/moderation-prompt');
+        if (!res.ok) throw new Error('Failed to load prompt');
+        const data = await res.json();
+        document.getElementById('moderationPromptText').value = data.content;
+        document.getElementById('moderationPromptModal').style.display = 'flex';
+      } catch (err) {
+        alert('Failed to load moderation prompt');
+      }
+    }
+
+    function closeModerationPromptModal() {
+      document.getElementById('moderationPromptModal').style.display = 'none';
+    }
+
+    async function saveModerationPrompt() {
+      const content = document.getElementById('moderationPromptText').value;
+      try {
+        const res = await fetch('/admin/moderation-prompt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content })
+        });
+        if (!res.ok) throw new Error('Failed to save');
+        closeModerationPromptModal();
+      } catch (err) {
+        alert('Failed to save moderation prompt');
+      }
+    }
+
+    // Close modal on outside click
+    document.getElementById('moderationPromptModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModerationPromptModal();
+    });
+  </script>
 </body>
 </html>

@@ -16,6 +16,7 @@ import { dirname, join } from 'path';
 import config from './config/index.js';
 import { initDb } from './db/index.js';
 import { initDefaultAdmin } from './lib/users.js';
+import { startAutoPublishWorker, stopAutoPublishWorker } from './lib/auto-publish-worker.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -36,6 +37,7 @@ import adminAiGenerateRoutes from './routes/admin/ai-generate.js';
 import adminFotoRoutes from './routes/admin/foto.js';
 import adminUsersRoutes from './routes/admin/users.js';
 import magicLoginRoutes from './routes/admin/magic-login.js';
+import autoPublishRoutes from './routes/admin/auto-publish.js';
 import rssRoutes from './routes/rss.js';
 
 // Ensure uploads directory exists
@@ -148,6 +150,7 @@ await fastify.register(adminAiGenerateRoutes);
 await fastify.register(adminFotoRoutes);
 await fastify.register(adminUsersRoutes);
 await fastify.register(magicLoginRoutes);
+await fastify.register(autoPublishRoutes);
 
 // Root redirects
 fastify.get('/', async (request, reply) => {
@@ -206,6 +209,9 @@ const start = async () => {
     
     fastify.log.info(`Server started on ${config.server.baseUrl}`);
     fastify.log.info(`Environment: ${config.env}`);
+
+    // Start auto-publish worker (checks every 60 seconds)
+    startAutoPublishWorker(fastify, 60000);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
@@ -215,6 +221,7 @@ const start = async () => {
 // Graceful shutdown
 const shutdown = async (signal) => {
   fastify.log.info(`Received ${signal}, closing server...`);
+  stopAutoPublishWorker();
   await fastify.close();
   process.exit(0);
 };

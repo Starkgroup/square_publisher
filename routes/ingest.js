@@ -1,6 +1,8 @@
 import { validateIngestRequest, generateSummary, ValidationError, validateRssToLinkedInRequest, buildLinkedInText } from '../lib/validation.js';
 import { generateUniqueSlug } from '../lib/slugify.js';
 import { getDb } from '../db/index.js';
+import { getUserByClientKey } from '../lib/users.js';
+import { schedulePostForAutoPublish } from '../lib/auto-publish-worker.js';
 
 export default async function ingestRoutes(fastify) {
   /**
@@ -45,11 +47,32 @@ export default async function ingestRoutes(fastify) {
 
       const postId = result.lastInsertRowid;
 
+      // Check if user has auto-publish enabled
+      let autoPublishScheduled = false;
+      let publishAt = null;
+
+      if (validatedData.client_key) {
+        const user = getUserByClientKey(validatedData.client_key);
+        if (user && user.auto_publish_enabled) {
+          // Schedule for auto-publish in 6 hours
+          publishAt = schedulePostForAutoPublish(postId, 6);
+          autoPublishScheduled = true;
+
+          fastify.log.info({
+            post_id: postId,
+            user_id: user.id,
+            publish_at: publishAt.toISOString(),
+            trace_id: request.id,
+          }, 'Post scheduled for auto-publish');
+        }
+      }
+
       fastify.log.info({
         post_id: postId,
         slug,
         source: validatedData.source,
         ext_id: validatedData.ext_id,
+        auto_publish: autoPublishScheduled,
         trace_id: request.id,
       }, 'Post ingested successfully');
 
@@ -57,6 +80,8 @@ export default async function ingestRoutes(fastify) {
         id: postId,
         slug,
         status: 'draft',
+        auto_publish_scheduled: autoPublishScheduled,
+        publish_at: publishAt ? publishAt.toISOString() : null,
         edit_url: `${fastify.config.server.baseUrl}/admin/posts/${postId}`,
       });
 

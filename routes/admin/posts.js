@@ -1,6 +1,7 @@
 import { getDb } from '../../db/index.js';
 import { validateText, normalizeText, generateSummary, ValidationError } from '../../lib/validation.js';
 import { logAudit } from '../../lib/audit.js';
+import { getAutoPublishEnabled, getAllUsers } from '../../lib/users.js';
 
 export default async function adminPostsRoutes(fastify) {
   /**
@@ -13,6 +14,7 @@ export default async function adminPostsRoutes(fastify) {
     const db = getDb();
     
     const { status, page = 1, limit = 20 } = request.query;
+    const statusFilter = status && status !== 'all' ? status : null;
     const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
     let query = 'SELECT id, slug, title, summary, status, pub_date, created_at, updated_at FROM posts';
@@ -23,9 +25,9 @@ export default async function adminPostsRoutes(fastify) {
 
     const whereClauses = [];
 
-    if (status) {
+    if (statusFilter) {
       whereClauses.push('status = ?');
-      params.push(status);
+      params.push(statusFilter);
     }
 
     // For non-admin users, restrict posts to their client_key (if set)
@@ -49,8 +51,8 @@ export default async function adminPostsRoutes(fastify) {
 
     if (whereClauses.length > 0) {
       countQuery += ' WHERE ' + whereClauses.join(' AND ');
-      if (status) {
-        countParams.push(status);
+      if (statusFilter) {
+        countParams.push(statusFilter);
       }
       if (!isAdmin && clientKey) {
         countParams.push(clientKey);
@@ -61,14 +63,24 @@ export default async function adminPostsRoutes(fastify) {
 
     const totalPages = Math.ceil(totalCount / parseInt(limit, 10));
 
+    // Get auto-publish status for current user
+    const autoPublishEnabled = getAutoPublishEnabled(request.session.userId);
+
+    const usersForAutoPublish = isAdmin
+      ? getAllUsers().filter(u => u.role === 'editor')
+      : [];
+
     return reply.view('admin/posts.ejs', {
       posts,
       user: {
         email: request.session.email,
         role: request.session.role,
+        userId: request.session.userId,
       },
+      autoPublishEnabled,
+      usersForAutoPublish,
       filters: {
-        status: status || 'all',
+        status: statusFilter || 'all',
       },
       pagination: {
         page: parseInt(page, 10),
