@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Posts - Square Publisher</title>
   <link rel="stylesheet" href="/public/css/admin.css">
+  <link rel="stylesheet" href="/public/css/dashboard-custom.css">
 </head>
+
 <body class="admin-page">
   <header class="admin-header">
     <div class="admin-brand">
@@ -17,149 +20,221 @@
     <div class="admin-nav">
       <a href="/admin/posts" class="admin-nav-link admin-nav-link--active">Posts</a>
       <a href="/admin/foto" class="admin-nav-link">Foto</a>
-      <% if (user.role === 'admin') { %>
+      <% if (user.role==='admin' ) { %>
         <a href="/admin/users" class="admin-nav-link">Users</a>
         <a href="/admin/audit" class="admin-nav-link">Audit Log</a>
-      <% } %>
-      <div class="admin-user">
-        <span><%= user.email %></span>
-        <form action="/admin/logout" method="POST">
-          <button type="submit" class="btn btn-secondary">Logout</button>
-        </form>
-      </div>
+        <% } %>
+          <div class="admin-user">
+            <span>
+              <%= user.email %>
+            </span>
+            <form action="/admin/logout" method="POST">
+              <button type="submit" class="btn btn-secondary">Logout</button>
+            </form>
+          </div>
     </div>
   </header>
 
   <main class="admin-main">
-  <div class="container">
-    <div class="filters-row">
-      <div class="filters">
-        <select onchange="window.location.href='/admin/posts?status=' + this.value">
-          <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>All</option>
-          <option value="draft" <%= filters.status === 'draft' ? 'selected' : '' %>>Drafts</option>
-          <option value="published" <%= filters.status === 'published' ? 'selected' : '' %>>Published</option>
-          <option value="archived" <%= filters.status === 'archived' ? 'selected' : '' %>>Archived</option>
-          <option value="warning" <%= filters.status === 'warning' ? 'selected' : '' %>>⚠️ Warning</option>
-        </select>
-      </div>
+    <div class="container">
 
-      <% if (user.role === 'admin') { %>
-        <div class="auto-publish-toggle">
-          <button type="button" class="btn btn-secondary btn-sm" onclick="openModerationPromptModal()">
-            Edit Moderation Prompt
-          </button>
-        </div>
-      <% } else { %>
-        <div class="auto-publish-toggle">
-          <label class="toggle-switch">
-            <input type="checkbox" id="autoPublishToggle" <%= autoPublishEnabled ? 'checked' : '' %>>
-            <span class="toggle-slider"></span>
-          </label>
-          <span class="toggle-label">Automatische Veröffentlichung</span>
-        </div>
-      <% } %>
-    </div>
+      <% if (user.role==='admin' ) { %>
+        <!-- Admin Dashboard Panel -->
+        <div class="dashboard-panel">
+          <div class="dashboard-panel-header">
+            <div class="panel-title-group">
+              <h3>Auto-Publish Dashboard</h3>
+              <span class="panel-subtitle">Manage automatic publishing for editors</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm btn-icon" onclick="openModerationPromptModal()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              Edit Prompt
+            </button>
+          </div>
 
-    <% if (user.role === 'admin') { %>
-      <div class="card" style="margin-bottom: 16px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-          <h3 style="margin: 0;">Auto-Publish Users</h3>
-          <span class="text-muted">Toggle auto publishing per user</span>
-        </div>
-        <div style="margin-top: 12px; overflow-x: auto;">
-          <table class="users-mini-table">
-            <thead>
-              <tr>
-                <th style="width: 120px;">Auto-Publish</th>
-                <th>Email</th>
-                <th>Client Key</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% if (!usersForAutoPublish || usersForAutoPublish.length === 0) { %>
-                <tr>
-                  <td colspan="3" style="text-align: center; color: #999;">No users found</td>
-                </tr>
+          <div class="users-grid">
+            <% if (!usersForAutoPublish || usersForAutoPublish.length===0) { %>
+              <div class="empty-state">No editors found to configure.</div>
               <% } else { %>
-                <% usersForAutoPublish.forEach(u => { %>
-                  <tr>
-                    <td>
+                <% usersForAutoPublish.forEach(u=> { %>
+                  <div class="user-card <%= u.auto_publish_enabled ? 'active' : '' %>">
+                    <div class="user-info">
+                      <div class="user-avatar">
+                        <%= u.email.charAt(0).toUpperCase() %>
+                      </div>
+                      <div class="user-details">
+                        <span class="user-email" title="<%= u.email %>">
+                          <%= u.email %>
+                        </span>
+                        <span class="user-key">
+                          <%= u.client_key || 'No Key' %>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="user-action">
                       <label class="toggle-switch toggle-switch--sm">
-                        <input type="checkbox"
-                               class="auto-publish-user-toggle"
-                               data-user-id="<%= u.id %>"
-                               <%= u.auto_publish_enabled ? 'checked' : '' %>>
+                        <input type="checkbox" class="auto-publish-user-toggle" data-user-id="<%= u.id %>"
+                          <%=u.auto_publish_enabled ? 'checked' : '' %>>
                         <span class="toggle-slider"></span>
                       </label>
-                    </td>
-                    <td><%= u.email %></td>
-                    <td><%= u.client_key || '' %></td>
-                  </tr>
-                <% }) %>
-              <% } %>
-            </tbody>
-          </table>
+                    </div>
+                  </div>
+                  <% }) %>
+                    <% } %>
+          </div>
         </div>
-      </div>
-    <% } %>
-
-    <div class="posts-table">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Title / Summary</th>
-            <th>Status</th>
-            <th>Created</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% if (posts.length === 0) { %>
-            <tr>
-              <td colspan="5" style="text-align: center; color: #999;">No posts found</td>
-            </tr>
-          <% } else { %>
-            <% posts.forEach(post => { %>
-              <tr>
-                <td>#<%= post.id %></td>
-                <td>
-                  <% if (post.title) { %>
-                    <strong><%= post.title %></strong><br>
-                  <% } %>
-                  <small style="color: #666;"><%= post.summary || 'No summary' %></small>
-                </td>
-                <td>
-                  <span class="status status-<%= post.status %>"><%= post.status %></span>
-                </td>
-                <td><%= new Date(post.created_at).toLocaleDateString() %></td>
-                <td>
-                  <a href="/admin/posts/<%= post.id %>" class="btn btn-primary">Edit</a>
-                </td>
-              </tr>
-            <% }) %>
+        <% } else { %>
+          <!-- Editor View: Simple Toggle -->
+          <div class="dashboard-panel">
+            <div class="dashboard-panel-header">
+              <h3>Auto-Publish</h3>
+              <div class="auto-publish-toggle">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="autoPublishToggle" <%=autoPublishEnabled ? 'checked' : '' %>>
+                  <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">Enable Automatic Publishing</span>
+              </div>
+            </div>
+          </div>
           <% } %>
-        </tbody>
-      </table>
-    </div>
 
-    <% if (pagination.totalPages > 1) { %>
-      <div class="pagination">
-        <% for (let i = 1; i <= pagination.totalPages; i++) { %>
-          <a href="/admin/posts?page=<%= i %>&status=<%= filters.status %>" 
-             class="<%= i === pagination.page ? 'active' : '' %>"><%= i %></a>
-        <% } %>
-      </div>
-    <% } %>
-  </div>
+            <!-- Posts Table -->
+            <div class="posts-table-wrapper">
+              <table class="posts-table-styled">
+                <thead>
+                  <tr>
+                    <th class="th-id">ID</th>
+                    <th class="th-title">Title / Summary</th>
+
+                    <% if (user.role==='admin' ) { %>
+                      <th class="th-filter">
+                        <!-- Flex container for alignment -->
+                        <div class="th-filter-wrapper">
+                          <select onchange="updateFilter('client_key', this.value)" class="table-header-select">
+                            <option value="all">Owner: All</option>
+                            <% if (allUsers) { %>
+                              <% allUsers.forEach(u=> { %>
+                                <% if (u.client_key) { %>
+                                  <option value="<%= u.client_key %>" <%=filters.client_key===u.client_key ? 'selected'
+                                    : '' %>>
+                                    <%= u.email %>
+                                  </option>
+                                  <% } %>
+                                    <% }) %>
+                                      <% } %>
+                                        <option value="none" <%=filters.client_key==='none' ? 'selected' : '' %>>No
+                                          Owner</option>
+                          </select>
+                        </div>
+                      </th>
+                      <% } %>
+
+                        <th class="th-filter">
+                          <div class="th-filter-wrapper">
+                            <select onchange="updateFilter('status', this.value)" class="table-header-select">
+                              <option value="all" <%=filters.status==='all' ? 'selected' : '' %>>Status: All</option>
+                              <option value="draft" <%=filters.status==='draft' ? 'selected' : '' %>>Status: Draft
+                              </option>
+                              <option value="published" <%=filters.status==='published' ? 'selected' : '' %>>Status:
+                                Published</option>
+                              <option value="archived" <%=filters.status==='archived' ? 'selected' : '' %>>Status:
+                                Archived</option>
+                              <option value="warning" <%=filters.status==='warning' ? 'selected' : '' %>>Status: Warning
+                              </option>
+                            </select>
+                          </div>
+                        </th>
+
+                        <th class="th-created">Created</th>
+                        <th class="th-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (posts.length===0) { %>
+                    <tr>
+                      <td colspan="<%= user.role === 'admin' ? 6 : 5 %>" class="empty-table-state">
+                        <div class="empty-content">
+                          <img src="/public/img/logo.png" style="width: 40px; opacity: 0.2; margin-bottom: 10px;">
+                          <p>No posts found matching the criteria.</p>
+                        </div>
+                      </td>
+                    </tr>
+                    <% } else { %>
+                      <% posts.forEach(post=> { %>
+                        <tr>
+                          <td class="td-id">#<%= post.id %>
+                          </td>
+                          <td class="td-title">
+                            <% if (post.title) { %>
+                              <div class="post-title">
+                                <%= post.title %>
+                              </div>
+                              <% } %>
+                                <div class="post-summary">
+                                  <%= post.summary || 'No summary' %>
+                                </div>
+                          </td>
+
+                          <% if (user.role==='admin' ) { %>
+                            <td class="td-owner">
+                              <% if (post.client_key && clientKeyToUserMap && clientKeyToUserMap[post.client_key]) { %>
+                                <div class="owner-badge" title="<%= clientKeyToUserMap[post.client_key].email %>">
+                                  <%= clientKeyToUserMap[post.client_key].email.split('@')[0] %>
+                                </div>
+                                <% } else { %>
+                                  <span class="text-muted">-</span>
+                                  <% } %>
+                            </td>
+                            <% } %>
+
+                              <td class="td-status">
+                                <span class="status-indicator status-<%= post.status %>">
+                                  <%= post.status %>
+                                </span>
+                              </td>
+                              <td class="td-created">
+                                <%= new Date(post.created_at).toLocaleDateString() %>
+                              </td>
+                              <td class="td-actions">
+                                <a href="/admin/posts/<%= post.id %>" class="btn btn-ghost btn-sm" title="Edit Post">
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                  </svg>
+                                </a>
+                              </td>
+                        </tr>
+                        <% }) %>
+                          <% } %>
+                </tbody>
+              </table>
+            </div>
+
+            <% if (pagination.totalPages> 1) { %>
+              <div class="pagination">
+                <% for (let i=1; i <=pagination.totalPages; i++) { %>
+                  <a href="#" onclick="goToPage(<%= i %>); return false;"
+                    class="<%= i === pagination.page ? 'active' : '' %>">
+                    <%= i %>
+                  </a>
+                  <% } %>
+              </div>
+              <% } %>
+    </div>
   </main>
 
   <!-- Moderation Prompt Modal -->
   <div id="moderationPromptModal" class="modal" style="display: none;">
     <div class="modal-content modal-lg">
       <h2>Edit Moderation Prompt</h2>
-      <p class="text-muted">This prompt is used to check posts before auto-publishing. Use <code>{{text}}</code> as placeholder for post text.</p>
-      <textarea id="moderationPromptText" rows="15" style="width: 100%; font-family: monospace; font-size: 13px;"></textarea>
+      <p class="text-muted">This prompt is used to check posts before auto-publishing. Use <code>{{text}}</code> as
+        placeholder for post text.</p>
+      <textarea id="moderationPromptText" rows="15" spellcheck="false"></textarea>
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" onclick="closeModerationPromptModal()">Cancel</button>
         <button type="button" class="btn btn-primary" onclick="saveModerationPrompt()">Save</button>
@@ -168,145 +243,335 @@
   </div>
 
   <style>
-    .filters-row {
+    /* New Dashboard Styles */
+    .dashboard-panel {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .dashboard-panel-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       margin-bottom: 20px;
-      flex-wrap: wrap;
+    }
+
+    .panel-title-group h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #111827;
+      margin: 0;
+    }
+
+    .panel-subtitle {
+      font-size: 0.875rem;
+      color: #6B7280;
+    }
+
+    .btn-icon {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .users-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 16px;
     }
-    .auto-publish-toggle {
+
+    .user-card {
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: space-between;
+      padding: 16px;
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+      transition: all 0.2s;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
-    .toggle-switch {
-      position: relative;
-      display: inline-block;
-      width: 48px;
-      height: 26px;
+
+    .user-card.active {
+      background: #EFF6FF;
+      border-color: #BFDBFE;
     }
-    .toggle-switch--sm {
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      overflow: hidden;
+      flex: 1;
+    }
+
+    .user-avatar {
       width: 40px;
-      height: 22px;
-    }
-    .toggle-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    .toggle-slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #ccc;
-      transition: .3s;
-      border-radius: 26px;
-    }
-    .toggle-slider:before {
-      position: absolute;
-      content: "";
-      height: 20px;
-      width: 20px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      transition: .3s;
+      height: 40px;
       border-radius: 50%;
-    }
-    .toggle-switch--sm .toggle-slider:before {
-      height: 16px;
-      width: 16px;
-    }
-    .toggle-switch input:checked + .toggle-slider {
-      background-color: #2563eb;
-    }
-    .toggle-switch input:checked + .toggle-slider:before {
-      transform: translateX(22px);
-    }
-    .toggle-switch--sm input:checked + .toggle-slider:before {
-      transform: translateX(18px);
-    }
-    .toggle-label {
-      font-size: 14px;
-      color: #374151;
-    }
-    .status-warning {
-      background: #fef3c7;
-      color: #92400e;
-    }
-    .btn-sm {
-      padding: 4px 10px;
-      font-size: 13px;
-    }
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
+      background: #DBEAFE;
+      color: #1D4ED8;
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 1000;
-    }
-    .modal-content {
-      background: white;
-      padding: 24px;
-      border-radius: 8px;
-      max-width: 400px;
-      width: 90%;
-    }
-    .modal-lg {
-      max-width: 700px;
-    }
-    .modal-content h2 {
-      margin: 0 0 12px 0;
-    }
-    .modal-actions {
-      display: flex;
-      gap: 8px;
-      justify-content: flex-end;
-      margin-top: 16px;
-    }
-    .text-muted {
-      color: #6b7280;
-      font-size: 13px;
-    }
-    .card {
-      background: white;
-      padding: 16px;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-    .users-mini-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .users-mini-table th,
-    .users-mini-table td {
-      padding: 10px;
-      text-align: left;
-      border-bottom: 1px solid #e5e7eb;
-      font-size: 14px;
-    }
-    .users-mini-table th {
       font-weight: 600;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .user-card.active .user-avatar {
+      background: #2563EB;
+      color: white;
+    }
+
+    .user-details {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+      /* Text truncation fix */
+    }
+
+    .user-email {
+      font-size: 0.9rem;
+      font-weight: 500;
       color: #374151;
-      background: #f9fafb;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-key {
+      font-size: 0.75rem;
+      color: #9CA3B5;
+    }
+
+    /* Table Styles Override */
+    .posts-table-wrapper {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .posts-table-styled {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .posts-table-styled th {
+      background: #F9FAFB;
+      padding: 14px 24px;
+      /* Increased padding */
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6B7280;
+      border-bottom: 1px solid #E5E7EB;
+      vertical-align: middle;
+      height: 50px;
+    }
+
+    .th-filter-wrapper {
+      display: flex;
+      align-items: center;
+    }
+
+    .table-header-select {
+      background-color: transparent;
+      border: none;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6B7280;
+      cursor: pointer;
+      padding-right: 16px;
+      /* Clean styling to match TH text */
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right center;
+      background-size: 14px;
+      min-width: 120px;
+    }
+
+    .table-header-select:focus {
+      outline: none;
+      color: #374151;
+    }
+
+    .posts-table-styled td {
+      padding: 20px 24px;
+      border-bottom: 1px solid #F3F4F6;
+      vertical-align: top;
+      /* Align to top for multi-line summary */
+    }
+
+    .posts-table-styled tr:hover td {
+      background-color: #F9FAFB;
+    }
+
+    .posts-table-styled tr:last-child td {
+      border-bottom: none;
+    }
+
+    .td-id {
+      color: #9CA3B5;
+      font-family: monospace;
+      width: 60px;
+      padding-top: 22px !important;
+      /* Visual alignment with title */
+    }
+
+    .td-title {
+      width: 45%;
+      max-width: 450px;
+      /* Constrain width */
+    }
+
+    .post-title {
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+
+    .post-summary {
+      font-size: 0.85rem;
+      color: #6B7280;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .td-owner {
+      width: 15%;
+    }
+
+    .td-status {
+      width: 15%;
+      white-space: nowrap;
+    }
+
+    .td-created {
+      width: 15%;
+      white-space: nowrap;
+      color: #6B7280;
+      font-size: 0.85rem;
+    }
+
+    .td-actions {
+      width: 10%;
+      text-align: right;
+    }
+
+    .owner-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      background: #F3F4F6;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: #4B5563;
+      font-weight: 500;
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .status-draft {
+      background: #FEF3C7;
+      color: #92400E;
+    }
+
+    .status-published {
+      background: #DCFCE7;
+      color: #166534;
+    }
+
+    .status-archived {
+      background: #F3F4F6;
+      color: #4B5563;
+    }
+
+    .status-warning {
+      background: #FEF2F2;
+      color: #991B1B;
+    }
+
+    /* Ghost Button for Actions */
+    .btn-ghost {
+      background: transparent;
+      color: #9CA3B5;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .btn-ghost:hover {
+      color: #2563EB;
+      background: #EFF6FF;
+    }
+
+    .empty-table-state {
+      text-align: center;
+      padding: 64px !important;
+      color: #9CA3B5;
+    }
+
+    /* Modal Tweaks */
+    textarea#moderationPromptText {
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #E5E7EB;
+      background: #F9FAFB;
+    }
+
+    textarea#moderationPromptText:focus {
+      background: white;
+      border-color: #2563EB;
+      outline: none;
     }
   </style>
 
   <script>
+    // helper to update URL params
+    function updateFilter(key, value) {
+      const url = new URL(window.location.href);
+      url.searchParams.set(key, value);
+      url.searchParams.set('page', '1'); // reset to page 1
+      window.location.href = url.toString();
+    }
+
+    function goToPage(page) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('page', page);
+      window.location.href = url.toString();
+    }
+
     // Auto-publish toggle (non-admin)
     const autoPublishToggle = document.getElementById('autoPublishToggle');
     if (autoPublishToggle) {
-      autoPublishToggle.addEventListener('change', async function() {
+      autoPublishToggle.addEventListener('change', async function () {
         const enabled = this.checked;
         try {
           const res = await fetch('/admin/auto-publish/toggle', {
@@ -323,11 +588,25 @@
     }
 
     // Auto-publish toggles (admin per user)
-    document.querySelectorAll('.auto-publish-user-toggle').forEach(function(el) {
-      el.addEventListener('change', async function() {
+    // Add visual feedback to card
+    document.querySelectorAll('.auto-publish-user-toggle').forEach(function (el) {
+      el.addEventListener('change', async function () {
         const userId = this.dataset.userId;
         const enabled = this.checked;
+        const card = this.closest('.user-card');
+
         try {
+          // Optimistic UI
+          if (enabled) {
+            card.classList.add('active');
+            card.querySelector('.user-avatar').style.backgroundColor = '#2563EB';
+            card.querySelector('.user-avatar').style.color = 'white';
+          } else {
+            card.classList.remove('active');
+            card.querySelector('.user-avatar').style.backgroundColor = '';
+            card.querySelector('.user-avatar').style.color = '';
+          }
+
           const res = await fetch('/admin/users/' + userId + '/auto-publish', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -337,6 +616,12 @@
         } catch (err) {
           alert('Failed to update auto-publish setting');
           this.checked = !enabled;
+          // Revert UI
+          if (enabled) {
+            card.classList.remove('active');
+          } else {
+            card.classList.add('active');
+          }
         }
       });
     });
@@ -373,10 +658,10 @@
       }
     }
 
-    // Close modal on outside click
-    document.getElementById('moderationPromptModal').addEventListener('click', function(e) {
+    document.getElementById('moderationPromptModal').addEventListener('click', function (e) {
       if (e.target === this) closeModerationPromptModal();
     });
   </script>
 </body>
+
 </html>

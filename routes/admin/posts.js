@@ -13,15 +13,16 @@ export default async function adminPostsRoutes(fastify) {
   }, async (request, reply) => {
     const db = getDb();
     
-    const { status, page = 1, limit = 20 } = request.query;
+    const { status, client_key, page = 1, limit = 20 } = request.query;
     const statusFilter = status && status !== 'all' ? status : null;
+    const clientKeyFilter = client_key && client_key !== 'all' ? client_key : null;
     const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
-    let query = 'SELECT id, slug, title, summary, status, pub_date, created_at, updated_at FROM posts';
+    let query = 'SELECT id, slug, title, summary, status, pub_date, created_at, updated_at, client_key FROM posts';
     const params = [];
 
     const isAdmin = request.session.role === 'admin';
-    const clientKey = request.session.clientKey || null;
+    const sessionClientKey = request.session.clientKey || null;
 
     const whereClauses = [];
 
@@ -31,9 +32,17 @@ export default async function adminPostsRoutes(fastify) {
     }
 
     // For non-admin users, restrict posts to their client_key (if set)
-    if (!isAdmin && clientKey) {
+    if (!isAdmin && sessionClientKey) {
       whereClauses.push('client_key = ?');
-      params.push(clientKey);
+      params.push(sessionClientKey);
+    } else if (isAdmin && clientKeyFilter) {
+      // Allow admin to filter by client_key
+      if (clientKeyFilter === 'none') {
+        whereClauses.push('client_key IS NULL');
+      } else {
+        whereClauses.push('client_key = ?');
+        params.push(clientKeyFilter);
+      }
     }
 
     if (whereClauses.length > 0) {
@@ -54,8 +63,12 @@ export default async function adminPostsRoutes(fastify) {
       if (statusFilter) {
         countParams.push(statusFilter);
       }
-      if (!isAdmin && clientKey) {
-        countParams.push(clientKey);
+      if (!isAdmin && sessionClientKey) {
+        countParams.push(sessionClientKey);
+      } else if (isAdmin && clientKeyFilter) {
+        if (clientKeyFilter !== 'none') {
+           countParams.push(clientKeyFilter);
+        }
       }
     }
 
@@ -66,8 +79,16 @@ export default async function adminPostsRoutes(fastify) {
     // Get auto-publish status for current user
     const autoPublishEnabled = getAutoPublishEnabled(request.session.userId);
 
+    const allUsers = isAdmin ? getAllUsers() : [];
+    const clientKeyToUserMap = allUsers.reduce((acc, user) => {
+      if (user.client_key) {
+        acc[user.client_key] = user;
+      }
+      return acc;
+    }, {});
+
     const usersForAutoPublish = isAdmin
-      ? getAllUsers().filter(u => u.role === 'editor')
+      ? allUsers.filter(u => u.role === 'editor')
       : [];
 
     return reply.view('admin/posts.ejs', {
@@ -79,8 +100,11 @@ export default async function adminPostsRoutes(fastify) {
       },
       autoPublishEnabled,
       usersForAutoPublish,
+      clientKeyToUserMap,
+      allUsers,
       filters: {
         status: statusFilter || 'all',
+        client_key: clientKeyFilter || 'all',
       },
       pagination: {
         page: parseInt(page, 10),
